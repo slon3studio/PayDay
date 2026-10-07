@@ -1,0 +1,480 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		05EDD9B17BA35BEC1C43E5E7 /* AppSetup.swift in Sources */ = {isa = PBXBuildFile; fileRef = C964E1A0E7CC97E9264697CB /* AppSetup.swift */; };
+		0DDD8D2E40BB08BEA84B6918 /* MonthlyGoal.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2A39B94B79ACEB845096916 /* MonthlyGoal.swift */; };
+		182153C6279C7B1C984F9333 /* StatTile.swift in Sources */ = {isa = PBXBuildFile; fileRef = D23D147CEFFBB7D654D229B1 /* StatTile.swift */; };
+		21D20FA9DFCA1960499F2858 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B22C9A2AA0CCE16B33C6127 /* AppSettings.swift */; };
+		2628478316B323478C49FDE2 /* KeyboardDismiss.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDC9CE014DC8CC4812A3DF0A /* KeyboardDismiss.swift */; };
+		31870D3EC09539F58B592BFC /* MarkPaidSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9EEEC10AB1A5DC4D3274728 /* MarkPaidSheet.swift */; };
+		3691FD6558275EA67FD77150 /* ProjectionCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15FC50B042E95AC01D668AAB /* ProjectionCard.swift */; };
+		3B02289539399782954139FB /* Formatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E48D0C158949C1A3921A2C6 /* Formatters.swift */; };
+		491C903DE5614D17CDE1FCCB /* ShiftEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5647CFD84E274D5C930FEDC4 /* ShiftEditorView.swift */; };
+		80382182F499760C486FA54B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83B6A10F3EEE12254397EA6D /* ContentView.swift */; };
+		8E85518661DA96A1FC02F106 /* TimesheetExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B7DCEABF2E51F0DB4C636CB /* TimesheetExport.swift */; };
+		929204598E26710A95AB1833 /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE71B3611DAE924AAD24A2C /* UserProfile.swift */; };
+		92B6DD3B79BC484B447D9FE8 /* PayDayApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B578F0640B0A8E206D43907 /* PayDayApp.swift */; };
+		9E46D3F943BB5730B59E4EC9 /* MonthPayment.swift in Sources */ = {isa = PBXBuildFile; fileRef = D64B87F4183A524CBCF2B9FD /* MonthPayment.swift */; };
+		9F708C2D55BD69A246758E0C /* PreviewData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C206FD3435F9D00E317A9AF /* PreviewData.swift */; };
+		A0AEF4C0E8BFAADBB131B901 /* Job.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3397059578EE9D68B06B9D4 /* Job.swift */; };
+		A6166A3D631BA00332ABF078 /* Shift.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE1517F8195A737C702698C9 /* Shift.swift */; };
+		AC44634C249AAAA535848AFA /* JobView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 700B3ADB7A9173C66820F12A /* JobView.swift */; };
+		C93A807896020D54256EFAF8 /* MonthHeatmap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A7C352CB5B23BFBCC751F72 /* MonthHeatmap.swift */; };
+		CDAD0CD81D09D07C4F2AE498 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 96AECD55230B142A242C318C /* Assets.xcassets */; };
+		E89EC8CAC8188BC03E6B3B74 /* JobEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58E2CA854F4680F60462AB0B /* JobEditorView.swift */; };
+		EB0F3F86AC7294AF0FFD370F /* JobAppearance.swift in Sources */ = {isa = PBXBuildFile; fileRef = E95693D236DEEF9F3AEA73CB /* JobAppearance.swift */; };
+		ED7D318E887CA581D2D560E6 /* ShiftStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56FF335BEC8B462DF596272C /* ShiftStats.swift */; };
+		EF868715D0FB86AD8DAAA2B5 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 442FDF6C414B104C38825721 /* ProfileView.swift */; };
+		F715B3C3FE180A05C2EFBE88 /* AllShiftsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB01E525C986A901FBFA12FD /* AllShiftsView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0B22C9A2AA0CCE16B33C6127 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
+		13301E4A1DD2904D9D44F874 /* PayDay.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PayDay.entitlements; sourceTree = "<group>"; };
+		15FC50B042E95AC01D668AAB /* ProjectionCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectionCard.swift; sourceTree = "<group>"; };
+		2B578F0640B0A8E206D43907 /* PayDayApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PayDayApp.swift; sourceTree = "<group>"; };
+		3A7C352CB5B23BFBCC751F72 /* MonthHeatmap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthHeatmap.swift; sourceTree = "<group>"; };
+		442FDF6C414B104C38825721 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		528D5FA4D0D8BAB341DAC866 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		5647CFD84E274D5C930FEDC4 /* ShiftEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftEditorView.swift; sourceTree = "<group>"; };
+		56FF335BEC8B462DF596272C /* ShiftStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftStats.swift; sourceTree = "<group>"; };
+		58E2CA854F4680F60462AB0B /* JobEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobEditorView.swift; sourceTree = "<group>"; };
+		5B7DCEABF2E51F0DB4C636CB /* TimesheetExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimesheetExport.swift; sourceTree = "<group>"; };
+		700B3ADB7A9173C66820F12A /* JobView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobView.swift; sourceTree = "<group>"; };
+		7E48D0C158949C1A3921A2C6 /* Formatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formatters.swift; sourceTree = "<group>"; };
+		83B6A10F3EEE12254397EA6D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		8C206FD3435F9D00E317A9AF /* PreviewData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewData.swift; sourceTree = "<group>"; };
+		96AECD55230B142A242C318C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AB01E525C986A901FBFA12FD /* AllShiftsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllShiftsView.swift; sourceTree = "<group>"; };
+		AE1517F8195A737C702698C9 /* Shift.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shift.swift; sourceTree = "<group>"; };
+		B3397059578EE9D68B06B9D4 /* Job.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Job.swift; sourceTree = "<group>"; };
+		C964E1A0E7CC97E9264697CB /* AppSetup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSetup.swift; sourceTree = "<group>"; };
+		C9EEEC10AB1A5DC4D3274728 /* MarkPaidSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkPaidSheet.swift; sourceTree = "<group>"; };
+		CCE71B3611DAE924AAD24A2C /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
+		CDC9CE014DC8CC4812A3DF0A /* KeyboardDismiss.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardDismiss.swift; sourceTree = "<group>"; };
+		D23D147CEFFBB7D654D229B1 /* StatTile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatTile.swift; sourceTree = "<group>"; };
+		D2A39B94B79ACEB845096916 /* MonthlyGoal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyGoal.swift; sourceTree = "<group>"; };
+		D64B87F4183A524CBCF2B9FD /* MonthPayment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthPayment.swift; sourceTree = "<group>"; };
+		E95693D236DEEF9F3AEA73CB /* JobAppearance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobAppearance.swift; sourceTree = "<group>"; };
+		ED1D360C28C68282F7F3E7D5 /* PayDay.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PayDay.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		0A709F03BC8F2423C6550B21 = {
+			isa = PBXGroup;
+			children = (
+				4FF76C2A4A23C8BCC3F024ED /* PayDay */,
+				4CBBA23E9B5B8D4066A5C22D /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		0FD11EBE80A6C7D3DE7B7BC0 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				0B22C9A2AA0CCE16B33C6127 /* AppSettings.swift */,
+				C964E1A0E7CC97E9264697CB /* AppSetup.swift */,
+				B3397059578EE9D68B06B9D4 /* Job.swift */,
+				E95693D236DEEF9F3AEA73CB /* JobAppearance.swift */,
+				D2A39B94B79ACEB845096916 /* MonthlyGoal.swift */,
+				D64B87F4183A524CBCF2B9FD /* MonthPayment.swift */,
+				AE1517F8195A737C702698C9 /* Shift.swift */,
+				CCE71B3611DAE924AAD24A2C /* UserProfile.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		4CBBA23E9B5B8D4066A5C22D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				ED1D360C28C68282F7F3E7D5 /* PayDay.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		4FF76C2A4A23C8BCC3F024ED /* PayDay */ = {
+			isa = PBXGroup;
+			children = (
+				A159F330A706DC3930730031 /* App */,
+				0FD11EBE80A6C7D3DE7B7BC0 /* Models */,
+				72458C0AB4085525EE522856 /* Resources */,
+				DD1FA53A3FA6FEC152CD7C2E /* Stats */,
+				790C1471D0F3A019CA2E172C /* Support */,
+				E71D44DD359BF5119858D316 /* Views */,
+				528D5FA4D0D8BAB341DAC866 /* Info.plist */,
+				13301E4A1DD2904D9D44F874 /* PayDay.entitlements */,
+			);
+			path = PayDay;
+			sourceTree = "<group>";
+		};
+		72458C0AB4085525EE522856 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				96AECD55230B142A242C318C /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		790C1471D0F3A019CA2E172C /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				7E48D0C158949C1A3921A2C6 /* Formatters.swift */,
+				CDC9CE014DC8CC4812A3DF0A /* KeyboardDismiss.swift */,
+				8C206FD3435F9D00E317A9AF /* PreviewData.swift */,
+				5B7DCEABF2E51F0DB4C636CB /* TimesheetExport.swift */,
+			);
+			path = Support;
+			sourceTree = "<group>";
+		};
+		A159F330A706DC3930730031 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				83B6A10F3EEE12254397EA6D /* ContentView.swift */,
+				2B578F0640B0A8E206D43907 /* PayDayApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		DD1FA53A3FA6FEC152CD7C2E /* Stats */ = {
+			isa = PBXGroup;
+			children = (
+				56FF335BEC8B462DF596272C /* ShiftStats.swift */,
+			);
+			path = Stats;
+			sourceTree = "<group>";
+		};
+		E71D44DD359BF5119858D316 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				AB01E525C986A901FBFA12FD /* AllShiftsView.swift */,
+				58E2CA854F4680F60462AB0B /* JobEditorView.swift */,
+				700B3ADB7A9173C66820F12A /* JobView.swift */,
+				C9EEEC10AB1A5DC4D3274728 /* MarkPaidSheet.swift */,
+				3A7C352CB5B23BFBCC751F72 /* MonthHeatmap.swift */,
+				442FDF6C414B104C38825721 /* ProfileView.swift */,
+				15FC50B042E95AC01D668AAB /* ProjectionCard.swift */,
+				5647CFD84E274D5C930FEDC4 /* ShiftEditorView.swift */,
+				D23D147CEFFBB7D654D229B1 /* StatTile.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A0D97D841A7ABBC9AC602A4B /* PayDay */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D87946CCBAA916EC0BDFF1B9 /* Build configuration list for PBXNativeTarget "PayDay" */;
+			buildPhases = (
+				34A9514DC9D34002DD2FE6B1 /* Sources */,
+				D31AFBD12BACD6A6C2362A70 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PayDay;
+			packageProductDependencies = (
+			);
+			productName = PayDay;
+			productReference = ED1D360C28C68282F7F3E7D5 /* PayDay.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		1A7CB97DC8DE5E89E84DED4C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					A0D97D841A7ABBC9AC602A4B = {
+						DevelopmentTeam = 2FV64X6H3S;
+						SystemCapabilities = {
+							com.apple.BackgroundModes = {
+								enabled = 1;
+							};
+							com.apple.Push = {
+								enabled = 1;
+							};
+							com.apple.iCloud = {
+								enabled = 1;
+							};
+						};
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 7FB673039D53701763E51E6A /* Build configuration list for PBXProject "PayDay" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 0A709F03BC8F2423C6550B21;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 4CBBA23E9B5B8D4066A5C22D /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A0D97D841A7ABBC9AC602A4B /* PayDay */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		D31AFBD12BACD6A6C2362A70 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CDAD0CD81D09D07C4F2AE498 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		34A9514DC9D34002DD2FE6B1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F715B3C3FE180A05C2EFBE88 /* AllShiftsView.swift in Sources */,
+				21D20FA9DFCA1960499F2858 /* AppSettings.swift in Sources */,
+				05EDD9B17BA35BEC1C43E5E7 /* AppSetup.swift in Sources */,
+				80382182F499760C486FA54B /* ContentView.swift in Sources */,
+				3B02289539399782954139FB /* Formatters.swift in Sources */,
+				A0AEF4C0E8BFAADBB131B901 /* Job.swift in Sources */,
+				EB0F3F86AC7294AF0FFD370F /* JobAppearance.swift in Sources */,
+				E89EC8CAC8188BC03E6B3B74 /* JobEditorView.swift in Sources */,
+				AC44634C249AAAA535848AFA /* JobView.swift in Sources */,
+				2628478316B323478C49FDE2 /* KeyboardDismiss.swift in Sources */,
+				31870D3EC09539F58B592BFC /* MarkPaidSheet.swift in Sources */,
+				C93A807896020D54256EFAF8 /* MonthHeatmap.swift in Sources */,
+				9E46D3F943BB5730B59E4EC9 /* MonthPayment.swift in Sources */,
+				0DDD8D2E40BB08BEA84B6918 /* MonthlyGoal.swift in Sources */,
+				92B6DD3B79BC484B447D9FE8 /* PayDayApp.swift in Sources */,
+				9F708C2D55BD69A246758E0C /* PreviewData.swift in Sources */,
+				EF868715D0FB86AD8DAAA2B5 /* ProfileView.swift in Sources */,
+				3691FD6558275EA67FD77150 /* ProjectionCard.swift in Sources */,
+				A6166A3D631BA00332ABF078 /* Shift.swift in Sources */,
+				491C903DE5614D17CDE1FCCB /* ShiftEditorView.swift in Sources */,
+				ED7D318E887CA581D2D560E6 /* ShiftStats.swift in Sources */,
+				182153C6279C7B1C984F9333 /* StatTile.swift in Sources */,
+				8E85518661DA96A1FC02F106 /* TimesheetExport.swift in Sources */,
+				929204598E26710A95AB1833 /* UserProfile.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		05477B214FD15DFCDFF1EA5A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		82FF3979248678C5B5A7CEFC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = PayDay/PayDay.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2FV64X6H3S;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PayDay/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PayDay;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.slon3studio.PayDay;
+				PRODUCT_NAME = PayDay;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		89CCC24E3DE0213F39A2F0DD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = PayDay/PayDay.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2FV64X6H3S;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PayDay/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PayDay;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.slon3studio.PayDay;
+				PRODUCT_NAME = PayDay;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		A4494726FB61577CB8DC55B6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		7FB673039D53701763E51E6A /* Build configuration list for PBXProject "PayDay" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				05477B214FD15DFCDFF1EA5A /* Debug */,
+				A4494726FB61577CB8DC55B6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D87946CCBAA916EC0BDFF1B9 /* Build configuration list for PBXNativeTarget "PayDay" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				89CCC24E3DE0213F39A2F0DD /* Debug */,
+				82FF3979248678C5B5A7CEFC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 1A7CB97DC8DE5E89E84DED4C /* Project object */;
+}
