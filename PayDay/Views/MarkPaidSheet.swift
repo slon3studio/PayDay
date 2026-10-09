@@ -51,7 +51,7 @@ struct MarkPaidSheet: View {
                     }
                     DatePicker("Paid on", selection: $paidOn, displayedComponents: .date)
                 } header: {
-                    Text("\(job.displayName) · \(Fmt.monthTitle(monthStart))")
+                    SectionHeader("\(job.displayName) · \(Fmt.monthTitle(monthStart))")
                 }
 
                 Section {
@@ -67,9 +67,11 @@ struct MarkPaidSheet: View {
                     Text(differenceExplanation)
                 }
 
-                Section("Note") {
+                Section {
                     TextField("Optional — payslip number, agency, anything", text: $note, axis: .vertical)
                         .lineLimit(1...3)
+                } header: {
+                    SectionHeader("Note")
                 }
 
                 if existing != nil {

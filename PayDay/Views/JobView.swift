@@ -241,15 +241,14 @@ struct JobView: View {
     }
 
     private var emptyState: some View {
-        ContentUnavailableView {
-            Label("No shifts yet", systemImage: job.symbol)
-        } description: {
-            Text("Log your first \(job.displayName) shift, at \(Fmt.money(job.hourlyRate))/h.")
-        } actions: {
-            Button("Log a shift") { editorTarget = .new(job) }
-                .buttonStyle(.borderedProminent)
-                .tint(job.tint)
-        }
+        EmptyState(
+            symbol: job.symbol,
+            title: "No shifts yet",
+            message: "Log your first \(job.displayName) shift and this tab fills in — hours, pay and what the month is heading for.",
+            tint: job.tint,
+            actionTitle: "Log a shift",
+            action: { editorTarget = .new(job) }
+        )
     }
 }
 

@@ -43,10 +43,11 @@ struct AllShiftsView: View {
     var body: some View {
         Group {
             if jobShifts.isEmpty {
-                ContentUnavailableView(
-                    "No shifts yet",
-                    systemImage: job.symbol,
-                    description: Text("Log a shift for \(job.displayName) and it will show up here.")
+                EmptyState(
+                    symbol: job.symbol,
+                    title: "No shifts yet",
+                    message: "Every month you work at \(job.displayName) shows up here, with a calendar and what it paid.",
+                    tint: job.tint
                 )
             } else {
                 list
@@ -340,7 +341,7 @@ struct TimesheetView: View {
                     table
                 }
             } header: {
-                Text("\(job.displayName) · \(Fmt.monthTitle(month))")
+                SectionHeader("\(job.displayName) · \(Fmt.monthTitle(month))")
             }
         }
         .listStyle(.insetGrouped)

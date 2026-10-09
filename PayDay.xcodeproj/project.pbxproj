@@ -18,6 +18,7 @@
 		491C903DE5614D17CDE1FCCB /* ShiftEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5647CFD84E274D5C930FEDC4 /* ShiftEditorView.swift */; };
 		67DE59DF38B7609125F6DBEE /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD5B37EAAA21865F56E67794 /* WelcomeView.swift */; };
 		80382182F499760C486FA54B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83B6A10F3EEE12254397EA6D /* ContentView.swift */; };
+		8A2096B84DC31FEE8AD3C914 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEAC1735BEA4E1485F69352C /* Theme.swift */; };
 		8E85518661DA96A1FC02F106 /* TimesheetExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B7DCEABF2E51F0DB4C636CB /* TimesheetExport.swift */; };
 		929204598E26710A95AB1833 /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE71B3611DAE924AAD24A2C /* UserProfile.swift */; };
 		92B6DD3B79BC484B447D9FE8 /* PayDayApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B578F0640B0A8E206D43907 /* PayDayApp.swift */; };
@@ -71,6 +72,7 @@
 		DD5B37EAAA21865F56E67794 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		E95693D236DEEF9F3AEA73CB /* JobAppearance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobAppearance.swift; sourceTree = "<group>"; };
 		ED1D360C28C68282F7F3E7D5 /* PayDay.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PayDay.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		EEAC1735BEA4E1485F69352C /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -137,6 +139,7 @@
 				CDC9CE014DC8CC4812A3DF0A /* KeyboardDismiss.swift */,
 				89801A45003EDB7A0F9CF007 /* Palette.swift */,
 				8C206FD3435F9D00E317A9AF /* PreviewData.swift */,
+				EEAC1735BEA4E1485F69352C /* Theme.swift */,
 				5B7DCEABF2E51F0DB4C636CB /* TimesheetExport.swift */,
 			);
 			path = Support;
@@ -283,6 +286,7 @@
 				491C903DE5614D17CDE1FCCB /* ShiftEditorView.swift in Sources */,
 				ED7D318E887CA581D2D560E6 /* ShiftStats.swift in Sources */,
 				182153C6279C7B1C984F9333 /* StatTile.swift in Sources */,
+				8A2096B84DC31FEE8AD3C914 /* Theme.swift in Sources */,
 				8E85518661DA96A1FC02F106 /* TimesheetExport.swift in Sources */,
 				929204598E26710A95AB1833 /* UserProfile.swift in Sources */,
 				67DE59DF38B7609125F6DBEE /* WelcomeView.swift in Sources */,

@@ -213,119 +213,255 @@ struct JobEditorView: View {
     }
 
     private var form: some View {
-        Form {
-            Section {
+        ScrollView {
+            VStack(spacing: 16) {
                 preview
-                    .listRowInsets(EdgeInsets())
-                    .listRowBackground(Color.clear)
+                nameCard
+                appearanceCard
+                payCard
+                shiftCard
+                breakCard
+                goalCard
+                if target.existing != nil { deleteButton }
             }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 32)
+        }
+        .background(Color(.systemGroupedBackground))
+        .scrollDismissesKeyboard(.interactively)
+    }
 
-            Section {
-                TextField("e.g. Café, Office, Tutoring", text: $name)
-            } header: {
-                Text("Name")
-            } footer: {
-                Text("Shown on its tab. Emoji welcome.")
+    // MARK: - Cards
+
+    private var nameCard: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Eyebrow("Name", opacity: 1).foregroundStyle(.secondary)
+            TextField("Café, Office, Tutoring…", text: $name)
+                .font(.title3.weight(.semibold))
+            Text("Shown on its tab. Emoji welcome.")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .cardSurface()
+    }
+
+    private var appearanceCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 10) {
+                Eyebrow("Colour", opacity: 1).foregroundStyle(.secondary)
+                HStack(spacing: 0) {
+                    ForEach(JobColor.allCases) { option in
+                        Button { color = option } label: {
+                            Circle()
+                                .fill(option.color)
+                                .frame(width: 26, height: 26)
+                                .overlay(Circle().strokeBorder(.background, lineWidth: option == color ? 2 : 0))
+                                .overlay(Circle()
+                                    .strokeBorder(Color.primary.opacity(option == color ? 0.9 : 0), lineWidth: 2)
+                                    .padding(-3))
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(option.label)
+                        .accessibilityAddTraits(option == color ? .isSelected : [])
+                    }
+                }
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
 
-            Section("Colour") {
-                colorGrid
-            }
+            Divider().padding(.leading, 16)
 
-            Section("Icon") {
+            VStack(alignment: .leading, spacing: 10) {
+                Eyebrow("Icon", opacity: 1).foregroundStyle(.secondary)
                 symbolGrid
             }
-
-            Section {
-                HStack {
-                    Text("Hourly rate")
-                    Spacer()
-                    TextField("0.00", text: $rateText)
-                        .keyboardType(.decimalPad)
-                        .multilineTextAlignment(.trailing)
-                        .monospacedDigit()
-                        .frame(maxWidth: 90)
-                    Text("€/h").foregroundStyle(.secondary)
-                }
-                Toggle("Tips", isOn: $tracksTips)
-            } header: {
-                Text("Pay")
-            } footer: {
-                Text(target.existing == nil
-                     ? "Turn on Tips for a job where you get them — waiting tables, a bar."
-                     : "A new rate applies to shifts you log from now on — ones already logged keep theirs.")
-            }
-
-            Section {
-                DatePicker("Starts", selection: $checkIn, displayedComponents: .hourAndMinute)
-                DatePicker("Ends", selection: $checkOut, displayedComponents: .hourAndMinute)
-                Toggle("Works weekends", isOn: $worksWeekends)
-            } header: {
-                Text("Usual shift")
-            } footer: {
-                Text("New shifts start out with these times. Weekends count toward the month's projection when on.")
-            }
-
-            Section {
-                Toggle("Unpaid break", isOn: $tracksBreaks.animation(.snappy))
-                if tracksBreaks {
-                    Picker("Usually", selection: $breakMinutes) {
-                        ForEach([15, 20, 30, 45, 60], id: \.self) { minutes in
-                            Text("\(minutes) min").tag(minutes)
-                        }
-                    }
-                }
-            } header: {
-                Text("Breaks")
-            } footer: {
-                Text(tracksBreaks
-                     ? "Taken off the hours a shift counts for, and you can change it per shift. Shifts already logged keep the hours they were logged with."
-                     : "Leave off if your break is paid, or if there isn't one. Plenty of jobs don't deduct one.")
-            }
-
-            Section {
-                HStack {
-                    Text("Target")
-                    Spacer()
-                    TextField("None", text: $goalText)
-                        .keyboardType(.decimalPad)
-                        .multilineTextAlignment(.trailing)
-                        .monospacedDigit()
-                        .frame(maxWidth: 110)
-                    Text(goalKind.isMoney ? "€" : "h")
-                        .foregroundStyle(.secondary)
-                        .frame(width: 14, alignment: .leading)
-                }
-                Picker("Goal in", selection: $goalKind.animation(.default)) {
-                    ForEach(GoalKind.allCases) { Text($0.rawValue).tag($0) }
-                }
-                .pickerStyle(.segmented)
-            } header: {
-                Text("Monthly goal")
-            } footer: {
-                Text("Shown as progress on the job's tab and its projection. Leave blank for none.")
-            }
-
-            if target.existing != nil {
-                Section {
-                    Button(role: .destructive) {
-                        confirmingDelete = true
-                    } label: {
-                        Label("Delete job", systemImage: "trash")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .alert("Delete \(trimmedName.isEmpty ? "this job" : trimmedName)?", isPresented: $confirmingDelete) {
-                        Button("Delete", role: .destructive) { deleteJob() }
-                        Button("Keep", role: .cancel) {}
-                    } message: {
-                        Text(shiftCount == 0
-                             ? "Its tab goes away."
-                             : "Its tab and all \(Fmt.count(shiftCount, "shift")) logged for it go away. This can't be undone.")
-                    }
-                }
-            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
         }
-        .scrollDismissesKeyboard(.interactively)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemGroupedBackground),
+                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+    }
+
+    private var payCard: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Label("Hourly rate", systemImage: "eurosign.circle")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                TextField("0", text: $rateText)
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.trailing)
+                    .monospacedDigit()
+                    .font(.title3.weight(.semibold))
+                    .frame(maxWidth: 110)
+                Text("€/h")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+
+            Divider().padding(.leading, 16)
+
+            Toggle(isOn: $tracksTips.animation(.snappy)) {
+                Label("Tips", systemImage: "banknote")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+
+            footnote(target.existing == nil
+                     ? "Turn Tips on for a job where you get them — waiting tables, a bar."
+                     : "A new rate applies to shifts logged from now on; ones already logged keep theirs.")
+        }
+        .background(Color(.secondarySystemGroupedBackground),
+                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+    }
+
+    private var shiftCard: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                timeBlock("Starts", selection: $checkIn)
+                Rectangle()
+                    .fill(Color(.separator).opacity(0.5))
+                    .frame(width: 1, height: 46)
+                timeBlock("Ends", selection: $checkOut)
+            }
+            .padding(.vertical, 14)
+
+            Divider().padding(.leading, 16)
+
+            Toggle(isOn: $worksWeekends) {
+                Label("Works weekends", systemImage: "calendar")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+
+            footnote("New shifts start out with these times. Weekends count toward the month's projection when on.")
+        }
+        .background(Color(.secondarySystemGroupedBackground),
+                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+    }
+
+    private func timeBlock(_ label: String, selection: Binding<Date>) -> some View {
+        VStack(spacing: 4) {
+            Eyebrow(label, opacity: 1)
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                .foregroundStyle(.secondary)
+            DatePicker("", selection: selection, displayedComponents: .hourAndMinute)
+                .labelsHidden()
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var breakCard: some View {
+        VStack(spacing: 0) {
+            Toggle(isOn: $tracksBreaks.animation(.snappy)) {
+                Label("Unpaid break", systemImage: "cup.and.saucer")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+
+            if tracksBreaks {
+                Divider().padding(.leading, 16)
+                HStack {
+                    Text("Usually")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Picker("", selection: $breakMinutes) {
+                        ForEach([15, 20, 30, 45, 60], id: \.self) { Text("\($0) min").tag($0) }
+                    }
+                    .labelsHidden()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+            }
+
+            footnote(tracksBreaks
+                     ? "Taken off the hours a shift counts for, and changeable per shift. Shifts already logged keep the hours they were logged with."
+                     : "Leave off if your break is paid, or if there isn't one.")
+        }
+        .background(Color(.secondarySystemGroupedBackground),
+                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+    }
+
+    private var goalCard: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Label("Monthly target", systemImage: "target")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                TextField("None", text: $goalText)
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.trailing)
+                    .monospacedDigit()
+                    .font(.title3.weight(.semibold))
+                    .frame(maxWidth: 110)
+                Text(goalKind.isMoney ? "€" : "h")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 18, alignment: .leading)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+
+            Divider().padding(.leading, 16)
+
+            Picker("Goal in", selection: $goalKind.animation(.default)) {
+                ForEach(GoalKind.allCases) { Text($0.rawValue).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+
+            footnote("Shown as progress on the job's tab and its projection. Leave blank for none.")
+        }
+        .background(Color(.secondarySystemGroupedBackground),
+                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+    }
+
+    private var deleteButton: some View {
+        Button(role: .destructive) {
+            confirmingDelete = true
+        } label: {
+            Label("Delete job", systemImage: "trash")
+                .font(.subheadline.weight(.medium))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+        }
+        .background(Color(.secondarySystemGroupedBackground),
+                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+        .alert("Delete \(trimmedName.isEmpty ? "this job" : trimmedName)?", isPresented: $confirmingDelete) {
+            Button("Delete", role: .destructive) { deleteJob() }
+            Button("Keep", role: .cancel) {}
+        } message: {
+            Text(shiftCount == 0
+                 ? "Its tab goes away."
+                 : "Its tab and all \(Fmt.count(shiftCount, "shift")) logged for it go away. This can't be undone.")
+        }
+    }
+
+    /// The explanatory line a Form would have put under the section.
+    private func footnote(_ text: String) -> some View {
+        Text(text)
+            .font(.caption)
+            .foregroundStyle(.tertiary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 12)
+            .padding(.top, 2)
     }
 
     // MARK: - Pieces

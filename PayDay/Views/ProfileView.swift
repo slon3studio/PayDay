@@ -103,13 +103,13 @@ struct ProfileView: View {
                             .listRowSeparator(.hidden)
                     }
                 } header: {
-                    Text("Projected pay · \(Fmt.monthTitle(.now))")
+                    SectionHeader("Projected pay · \(Fmt.monthTitle(.now))")
                 }
 
                 Section {
                     trendChart
                 } header: {
-                    Text(jobs.count > 1 ? "Compare" : "Trend")
+                    SectionHeader(jobs.count > 1 ? "Compare" : "Trend")
                 } footer: {
                     Text("The last \(granularity.limit) \(granularity == .week ? "weeks" : "months") you've worked.")
                 }
@@ -609,7 +609,7 @@ struct ProfileEditorView: View {
                     avatarRow
                     colourRow
                 } header: {
-                    Text("Appearance")
+                    SectionHeader("Appearance")
                 } footer: {
                     Text("Your colour tints the Profile tab.")
                 }
@@ -620,7 +620,7 @@ struct ProfileEditorView: View {
                             .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
                             .listRowBackground(Color.clear)
                     } header: {
-                        Text("All time")
+                        SectionHeader("All time")
                     } footer: {
                         Text("Everything logged since you started, across every job.")
                     }
@@ -753,11 +753,13 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Appearance") {
+                Section {
                     Picker("Theme", selection: $appearanceRaw) {
                         ForEach(Appearance.allCases) { Text($0.rawValue).tag($0.rawValue) }
                     }
                     .pickerStyle(.segmented)
+                } header: {
+                    SectionHeader("Appearance")
                 }
 
                 Section {
@@ -767,7 +769,7 @@ struct SettingsView: View {
                         }
                     }
                 } header: {
-                    Text("Currency")
+                    SectionHeader("Currency")
                 } footer: {
                     Text("Changes how every amount is shown. Nothing already logged is converted — the numbers stay as you entered them.")
                 }
@@ -780,7 +782,7 @@ struct SettingsView: View {
                         Label("iCloud sync", systemImage: StoreStatus.isSyncing ? "checkmark.icloud" : "xmark.icloud")
                     }
                 } header: {
-                    Text("Sync")
+                    SectionHeader("Sync")
                 } footer: {
                     Text(StoreStatus.isSyncing
                          ? "Your jobs and shifts are kept on every device signed in to the same Apple Account."
