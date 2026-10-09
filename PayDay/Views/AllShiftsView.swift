@@ -89,7 +89,7 @@ struct AllShiftsView: View {
         } message: { shift in
             Text("\(Fmt.dayHeader(shift.day)) · \(Fmt.time(shift.checkIn))–\(Fmt.time(shift.checkOut)) · \(Fmt.hours(shift.hours))")
         }
-        .tint(Palette.brand)
+        .tint(job.tint)
         .onAppear(perform: seedExpansion)
     }
 
@@ -370,7 +370,7 @@ struct TimesheetView: View {
         } message: {
             Text("Something went wrong writing the timesheet out. If your phone is low on storage, freeing some space should fix it.")
         }
-        .tint(Palette.brand)
+        .tint(job.tint)
     }
 
     private func export(_ format: TimesheetExport.Format) {

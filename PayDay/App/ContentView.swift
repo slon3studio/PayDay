@@ -31,10 +31,9 @@ struct ContentView: View {
         )
     }
 
-    /// The tab bar takes the selected job's colour, because a tab *is* that
-    /// job — it's the one piece of chrome whose whole purpose is telling the
-    /// jobs apart. Everything inside a tab resets to the app's green, so
-    /// buttons and toolbars don't follow it around.
+    /// A tab is coloured by what it's about: a job's tab by that job, Profile
+    /// by the app. Money stays green throughout either way, so the one figure
+    /// that means the same thing everywhere always looks the same.
     private var tabTint: Color {
         jobs.first { $0.id.uuidString == selection.wrappedValue }?.tint ?? Palette.brand
     }
@@ -61,8 +60,6 @@ struct ContentView: View {
         TabView(selection: selection) {
             ForEach(jobs) { job in
                 JobView(job: job)
-                    // Inside the tab it's the app again, not the job.
-                    .tint(Palette.brand)
                     .tag(job.id.uuidString)
                     .tabItem { Label(job.displayName, systemImage: job.symbol) }
             }

@@ -109,7 +109,7 @@ struct JobEditorView: View {
                 }
             }
         }
-        .tint(Palette.brand)
+        .tint(target.existing?.tint ?? Palette.brand)
     }
 
     private var navigationTitle: String {

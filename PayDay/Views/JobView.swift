@@ -419,11 +419,36 @@ struct WeekStrip: View {
     let shifts: [Shift]
     let onSelect: (Date, [Shift]) -> Void
 
+    /// Weeks away from this one. Negative is the past, positive the future —
+    /// which is how you reach a day you haven't worked yet.
+    @State private var offset = 0
+    @State private var drag: CGFloat = 0
+
     private var calendar: Calendar { Calendar.current }
 
+    private var weekStart: Date {
+        let thisWeek = calendar.dateInterval(of: .weekOfYear, for: .now)?.start ?? .now
+        return calendar.date(byAdding: .weekOfYear, value: offset, to: thisWeek) ?? thisWeek
+    }
+
     private var days: [Date] {
-        guard let start = calendar.dateInterval(of: .weekOfYear, for: .now)?.start else { return [] }
-        return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: start) }
+        (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: weekStart) }
+    }
+
+    /// "This week", "Next week", or the dates when it's further out.
+    private var title: String {
+        switch offset {
+        case 0: return "This week"
+        case 1: return "Next week"
+        case -1: return "Last week"
+        default:
+            guard let end = days.last else { return "" }
+            let sameMonth = calendar.isDate(weekStart, equalTo: end, toGranularity: .month)
+            let from = weekStart.formatted(sameMonth
+                ? .dateTime.day()
+                : .dateTime.day().month(.abbreviated))
+            return "\(from) – \(end.formatted(.dateTime.day().month(.abbreviated)))"
+        }
     }
 
     private var shiftsByDay: [Date: [Shift]] {
@@ -436,14 +461,32 @@ struct WeekStrip: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("This week")
-                    .font(.headline)
+            HStack(spacing: 8) {
+                step(-1, "chevron.left")
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(title)
+                        .font(.headline)
+                        .contentTransition(.numericText())
+                    if offset != 0 {
+                        Button("Back to this week") {
+                            withAnimation(.snappy) { offset = 0 }
+                        }
+                        .font(.caption2)
+                        .buttonStyle(.plain)
+                        .foregroundStyle(job.tint)
+                    }
+                }
+
                 Spacer()
+
                 Text(Fmt.hours(weekHours))
                     .font(.subheadline.weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(job.tint)
+                    .contentTransition(.numericText())
+
+                step(1, "chevron.right")
             }
 
             HStack(spacing: 6) {
@@ -451,9 +494,39 @@ struct WeekStrip: View {
                     cell(day, shifts: shiftsByDay[day] ?? [])
                 }
             }
+            .offset(x: drag)
+            .animation(.snappy, value: offset)
         }
         .padding(14)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+        .contentShape(Rectangle())
+        // Swipe the strip the way you'd swipe a calendar. The arrows are
+        // there too, because a swipe isn't discoverable on its own.
+        .gesture(
+            DragGesture(minimumDistance: 18)
+                .onChanged { drag = $0.translation.width / 4 }
+                .onEnded { value in
+                    withAnimation(.snappy) {
+                        if value.translation.width < -40 { offset += 1 }
+                        else if value.translation.width > 40 { offset -= 1 }
+                        drag = 0
+                    }
+                }
+        )
+    }
+
+    private func step(_ by: Int, _ symbol: String) -> some View {
+        Button {
+            withAnimation(.snappy) { offset += by }
+        } label: {
+            Image(systemName: symbol)
+                .font(.footnote.weight(.bold))
+                .foregroundStyle(job.tint)
+                .frame(width: 28, height: 28)
+                .background(job.tint.opacity(0.12), in: Circle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(by > 0 ? "Next week" : "Previous week")
     }
 
     private func cell(_ day: Date, shifts: [Shift]) -> some View {
@@ -531,7 +604,7 @@ struct RepeatCard: View {
             }
             .buttonStyle(.borderedProminent)
             .buttonBorderShape(.roundedRectangle(radius: 16))
-            .tint(Palette.brand)
+            .tint(job.tint)
         }
     }
 
@@ -552,7 +625,7 @@ struct RepeatCard: View {
             if let onUndo {
                 Button("Undo", action: onUndo)
                     .buttonStyle(.bordered)
-                    .tint(Palette.brand)
+                    .tint(job.tint)
             }
         }
     }
