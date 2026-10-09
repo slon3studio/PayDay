@@ -31,6 +31,14 @@ struct ContentView: View {
         )
     }
 
+    /// The tab bar takes the selected job's colour, because a tab *is* that
+    /// job — it's the one piece of chrome whose whole purpose is telling the
+    /// jobs apart. Everything inside a tab resets to the app's green, so
+    /// buttons and toolbars don't follow it around.
+    private var tabTint: Color {
+        jobs.first { $0.id.uuidString == selection.wrappedValue }?.tint ?? Palette.brand
+    }
+
     var body: some View {
         Group {
             // With no jobs there is nothing for the tabs to show, and Profile
@@ -42,9 +50,6 @@ struct ContentView: View {
             }
         }
         .animation(.snappy, value: jobs.isEmpty)
-        // Never the selected job's colour. The chrome is the app; the
-        // colours belong to what's in it.
-        .tint(Palette.brand)
         .fontDesign(.rounded)
         .preferredColorScheme(Appearance(rawValue: appearanceRaw)?.colorScheme)
         // One recognizer on the window covers every screen, so tapping away
@@ -56,14 +61,18 @@ struct ContentView: View {
         TabView(selection: selection) {
             ForEach(jobs) { job in
                 JobView(job: job)
+                    // Inside the tab it's the app again, not the job.
+                    .tint(Palette.brand)
                     .tag(job.id.uuidString)
                     .tabItem { Label(job.displayName, systemImage: job.symbol) }
             }
 
             ProfileView()
+                .tint(Palette.brand)
                 .tag(Self.profileTag)
                 .tabItem { Label("Profile", systemImage: "person.crop.circle") }
         }
+        .tint(tabTint)
     }
 }
 
