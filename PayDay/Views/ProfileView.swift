@@ -64,16 +64,9 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             content
-                .navigationTitle("Profile")
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button {
-                            showingSettings = true
-                        } label: {
-                            Label("Settings", systemImage: "gearshape")
-                        }
-                    }
-                }
+                // Same as the job tabs: the title and its one action are a
+                // row of content, so the bar above them was only height.
+                .toolbar(.hidden, for: .navigationBar)
                 .sheet(isPresented: $showingSettings) {
                     SettingsView()
                 }
@@ -88,6 +81,29 @@ struct ProfileView: View {
 
     private var content: some View {
         List {
+            Section {
+                HStack {
+                    Text("Profile")
+                        .font(.largeTitle.bold())
+
+                    Spacer(minLength: 12)
+
+                    Button {
+                        showingSettings = true
+                    } label: {
+                        Image(systemName: "gearshape")
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(profileColor.color)
+                            .frame(width: 38, height: 38)
+                            .background(profileColor.color.opacity(0.12), in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Settings")
+                }
+                .listRowInsets(EdgeInsets(top: 6, leading: 4, bottom: 0, trailing: 4))
+                .listRowBackground(Color.clear)
+            }
+
             Section {
                 profileHeader
                     .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
@@ -649,6 +665,7 @@ struct ProfileEditorView: View {
             }
         }
         .tint(color.color)
+        .appAppearance()
     }
 
     // MARK: - Pieces
@@ -791,6 +808,7 @@ struct SettingsView: View {
             }
         }
         .tint(accent)
+        .appAppearance()
     }
 
     // MARK: - Cards

@@ -147,3 +147,23 @@ extension View {
             )
     }
 }
+
+extension View {
+    /// Forces the chosen theme on this view.
+    ///
+    /// A sheet is presented in its own window scene, and `preferredColorScheme`
+    /// set on the tab tree doesn't reliably reach it: switching to dark left
+    /// the sheet on the light scheme it was born with, while the app behind it
+    /// changed. Applying it at each sheet's root settles it.
+    func appAppearance() -> some View {
+        modifier(AppAppearance())
+    }
+}
+
+private struct AppAppearance: ViewModifier {
+    @AppStorage(Appearance.key) private var raw: String = Appearance.system.rawValue
+
+    func body(content: Content) -> some View {
+        content.preferredColorScheme(Appearance(rawValue: raw)?.colorScheme)
+    }
+}

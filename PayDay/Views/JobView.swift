@@ -42,19 +42,9 @@ struct JobView: View {
                 // in the list instead (see `content`).
                 .navigationTitle(job.displayName)
                 .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .principal) {
-                        // Keeps the small centred title out of the bar.
-                        Color.clear.frame(width: 1, height: 1)
-                    }
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button {
-                            editorTarget = .new(job)
-                        } label: {
-                            Label("Log shift", systemImage: "plus")
-                        }
-                    }
-                }
+                // No bar at all: the title and the + are a row of content, so
+                // an empty bar above them was only taking height.
+                .toolbar(.hidden, for: .navigationBar)
                 .sheet(item: $editorTarget) { target in
                     ShiftEditorView(target: target)
                 }
@@ -83,11 +73,28 @@ struct JobView: View {
             // one collapses to a small centred title as soon as a long tab is
             // scrolled. This one stays big and on the left, and scrolls away.
             Section {
-                Text(job.displayName)
-                    .font(.largeTitle.bold())
-                    .lineLimit(1)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 4, bottom: 0, trailing: 0))
-                    .listRowBackground(Color.clear)
+                HStack {
+                    Text(job.displayName)
+                        .font(.largeTitle.bold())
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+
+                    Spacer(minLength: 12)
+
+                    Button {
+                        editorTarget = .new(job)
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(job.tint)
+                            .frame(width: 38, height: 38)
+                            .background(job.tint.opacity(0.12), in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Log shift")
+                }
+                .listRowInsets(EdgeInsets(top: 6, leading: 4, bottom: 0, trailing: 4))
+                .listRowBackground(Color.clear)
             }
 
             if !jobShifts.isEmpty {

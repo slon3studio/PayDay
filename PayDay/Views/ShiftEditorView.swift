@@ -171,6 +171,7 @@ struct ShiftEditorView: View {
             }
         }
         .tint(job.tint)
+        .appAppearance()
     }
 
 
