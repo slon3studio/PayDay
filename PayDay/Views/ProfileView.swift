@@ -132,10 +132,10 @@ struct ProfileView: View {
 
                 Section {
                     trendChart
+                        .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
+                        .listRowBackground(Color.clear)
                 } header: {
                     SectionHeader(jobs.count > 1 ? "Compare" : "Trend")
-                } footer: {
-                    Text("The last \(granularity.limit) \(granularity == .week ? "weeks" : "months") you've worked.")
                 }
             }
 
@@ -361,32 +361,40 @@ struct ProfileView: View {
                 if editMode.isEditing {
                     // Arrows as well as the drag handle: a drag is easy to
                     // miss on a small list, a tap isn't.
-                    HStack(spacing: 12) {
-                        JobRow(job: job, shiftCount: shifts(of: job).count, showsChevron: false)
-                        Button {
-                            withAnimation { moveJobs(from: IndexSet(integer: index), to: index - 1) }
-                        } label: {
-                            Image(systemName: "chevron.up.circle.fill").font(.title2)
+                    HStack(spacing: 10) {
+                        JobRow(job: job, shiftCount: shifts(of: job).logged.count, showsChevron: false)
+                        VStack(spacing: 6) {
+                            Button {
+                                withAnimation { moveJobs(from: IndexSet(integer: index), to: index - 1) }
+                            } label: {
+                                Image(systemName: "chevron.up.circle.fill").font(.title3)
+                            }
+                            .buttonStyle(.borderless)
+                            .disabled(index == 0)
+                            .accessibilityLabel("Move \(job.displayName) up")
+                            Button {
+                                withAnimation { moveJobs(from: IndexSet(integer: index), to: index + 2) }
+                            } label: {
+                                Image(systemName: "chevron.down.circle.fill").font(.title3)
+                            }
+                            .buttonStyle(.borderless)
+                            .disabled(index == jobs.count - 1)
+                            .accessibilityLabel("Move \(job.displayName) down")
                         }
-                        .buttonStyle(.borderless)
-                        .disabled(index == 0)
-                        .accessibilityLabel("Move \(job.displayName) up")
-                        Button {
-                            withAnimation { moveJobs(from: IndexSet(integer: index), to: index + 2) }
-                        } label: {
-                            Image(systemName: "chevron.down.circle.fill").font(.title2)
-                        }
-                        .buttonStyle(.borderless)
-                        .disabled(index == jobs.count - 1)
-                        .accessibilityLabel("Move \(job.displayName) down")
                     }
+                    .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
                 } else {
                     Button {
                         jobEditor = .edit(job)
                     } label: {
-                        JobRow(job: job, shiftCount: shifts(of: job).count)
+                        JobRow(job: job, shiftCount: shifts(of: job).logged.count)
                     }
                     .buttonStyle(.plain)
+                    .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
                 }
             }
             .onMove(perform: moveJobs)
@@ -394,9 +402,12 @@ struct ProfileView: View {
             Button {
                 jobEditor = .new
             } label: {
-                Label(jobs.isEmpty ? "Add your first job" : "Add a job", systemImage: "plus.circle.fill")
-                    .font(.body.weight(.semibold))
+                AddJobRow(first: jobs.isEmpty, tint: profileColor.color)
             }
+            .buttonStyle(.plain)
+            .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
         } header: {
             HStack {
                 SectionHeader("Jobs")
@@ -430,82 +441,217 @@ struct ProfileView: View {
 
     // MARK: - Totals
 
+    /// The last few periods, as a card rather than two stock pickers stacked
+    /// over a stock chart. The headline is the total for the window you're
+    /// looking at, so the bars are a shape to read rather than the only
+    /// content; the legend doubles as a per-job total.
     private var trendChart: some View {
-        VStack(spacing: 12) {
-            Picker("Metric", selection: $metric.animation(.default)) {
-                ForEach(ProfileMetric.allCases) { Text($0.rawValue).tag($0) }
-            }
-            .pickerStyle(.segmented)
+        let windowTotal = buckets.reduce(0.0) { running, bucket in
+            running + jobs.reduce(0.0) { $0 + bucket.value(for: $1, metric: metric) }
+        }
+        // Left to itself the chart rounds the ceiling up to the next round
+        // number, which left a third of the card empty above the bars.
+        let tallest = buckets.flatMap { bucket in
+            jobs.map { bucket.value(for: $0, metric: metric) }
+        }.max() ?? 0
 
-            Picker("Granularity", selection: $granularity.animation(.default)) {
-                ForEach(Granularity.allCases) { Text($0.rawValue).tag($0) }
+        return VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Eyebrow(metric == .hours ? "Hours logged" : "Earned", opacity: 1)
+                        .foregroundStyle(.secondary)
+                    Text(metric == .hours ? Fmt.hours(windowTotal) : Fmt.money(windowTotal))
+                        .font(.system(size: 30, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .contentTransition(.numericText())
+                        .minimumScaleFactor(0.6)
+                        .lineLimit(1)
+                    Text("across the last \(granularity.limit) \(granularity == .week ? "weeks" : "months")")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 8)
+                ChipPicker(
+                    options: [.init(Granularity.week, "W"), .init(Granularity.month, "M")],
+                    selection: $granularity,
+                    tint: profileColor.color
+                )
             }
-            .pickerStyle(.segmented)
 
             Chart {
                 ForEach(buckets) { bucket in
                     ForEach(jobs) { job in
                         BarMark(
                             x: .value("Period", bucket.label),
-                            y: .value(metric.rawValue, bucket.value(for: job, metric: metric))
+                            y: .value(metric.rawValue, bucket.value(for: job, metric: metric)),
+                            width: .fixed(jobs.count > 1 ? 10 : 18)
                         )
                         .foregroundStyle(by: .value("Job", job.displayName))
                         .position(by: .value("Job", job.displayName))
-                        .cornerRadius(4)
+                        .cornerRadius(5)
                     }
                 }
             }
             .chartForegroundStyleScale(domain: jobs.map(\.displayName), range: jobs.map(\.tint))
-            .chartLegend(jobs.count > 1 ? .visible : .hidden)
+            .chartLegend(.hidden)
             .chartYAxis {
-                AxisMarks { value in
-                    AxisGridLine()
+                AxisMarks(position: .trailing, values: .automatic(desiredCount: 3)) { value in
+                    AxisGridLine().foregroundStyle(.quaternary)
                     AxisValueLabel {
                         if let raw = value.as(Double.self) {
-                            Text(metric == .hours ? "\(Int(raw))h" : "€\(Int(raw))")
+                            Text(metric == .hours ? "\(Int(raw))h" : Fmt.compactMoney(raw))
+                                .font(.system(size: 10, weight: .medium, design: .rounded))
+                                .foregroundStyle(Color.secondary.opacity(0.6))
                         }
                     }
                 }
             }
-            .frame(height: 220)
+            .chartXAxis {
+                AxisMarks { _ in
+                    AxisValueLabel()
+                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Color.secondary)
+                }
+            }
+            .chartYScale(domain: 0...max(tallest * 1.12, 1))
+            .frame(height: 170)
+
+            // The legend carries each job's total for the window, which is the
+            // comparison the section is named after.
+            if jobs.count > 1 {
+                Divider()
+                VStack(spacing: 8) {
+                    ForEach(jobs) { job in
+                        let value = buckets.reduce(0.0) { $0 + $1.value(for: job, metric: metric) }
+                        HStack(spacing: 8) {
+                            Circle().fill(job.tint).frame(width: 7, height: 7)
+                            Text(job.displayName).font(.subheadline)
+                            Spacer(minLength: 8)
+                            Text(metric == .hours ? Fmt.hours(value) : Fmt.money(value))
+                                .font(.subheadline.weight(.semibold))
+                                .monospacedDigit()
+                                .foregroundStyle(job.tint)
+                        }
+                    }
+                }
+            }
+
+            ChipPicker(
+                options: [.init(ProfileMetric.hours, "Hours"), .init(ProfileMetric.earnings, "Earned")],
+                selection: $metric,
+                tint: profileColor.color
+            )
+            .frame(maxWidth: .infinity)
         }
-        .padding(.vertical, 4)
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemGroupedBackground),
+                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+        .animation(.snappy, value: metric)
+        .animation(.snappy, value: granularity)
     }
 }
 
-/// A job in the Profile's list: its colour and icon, name, and rate.
+/// A job on the Profile tab: a card in that job's colour, because that colour
+/// is what the job's own tab is wearing. The facts underneath are chips rather
+/// than a comma-separated line — the rate is the one you'd look for, so it is
+/// the one carrying the colour.
 private struct JobRow: View {
     let job: Job
     let shiftCount: Int
     var showsChevron = true
 
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: job.symbol)
-                .font(.body.weight(.semibold))
-                .foregroundStyle(.white)
-                .frame(width: 40, height: 40)
-                .background(
-                    LinearGradient(colors: [job.tint, job.gradientEnd],
-                                   startPoint: .topLeading, endPoint: .bottomTrailing),
-                    in: RoundedRectangle(cornerRadius: Palette.tileRadius, style: .continuous)
-                )
+        HStack(spacing: 0) {
+            LinearGradient(colors: [job.tint, job.gradientEnd],
+                           startPoint: .top, endPoint: .bottom)
+                .frame(width: 5)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(job.displayName)
-                    .font(.body.weight(.medium))
-                Text("\(Fmt.money(job.hourlyRate))/h\(job.tracksTips ? " · tips" : "") · \(Fmt.count(shiftCount, "shift"))")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            HStack(spacing: 12) {
+                Image(systemName: job.symbol)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 42, height: 42)
+                    .background(
+                        LinearGradient(colors: [job.tint, job.gradientEnd],
+                                       startPoint: .topLeading, endPoint: .bottomTrailing),
+                        in: RoundedRectangle(cornerRadius: Palette.tileRadius, style: .continuous)
+                    )
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(job.displayName)
+                        .font(.system(.body, design: .rounded).weight(.semibold))
+
+                    HStack(spacing: 5) {
+                        chip("\(Fmt.money(job.hourlyRate))/h", tint: job.tint)
+                        if job.tracksTips { chip("Tips") }
+                        chip(Fmt.count(shiftCount, "shift"))
+                    }
+                }
+
+                Spacer(minLength: 8)
+
+                if showsChevron {
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                }
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous)
+                .fill(Color(.secondarySystemGroupedBackground))
+                .overlay {
+                    RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous)
+                        .fill(LinearGradient(colors: [job.tint.opacity(0.10), .clear],
+                                             startPoint: .leading, endPoint: .trailing))
+                }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+        .contentShape(Rectangle())
+    }
+
+    private func chip(_ text: String, tint: Color? = nil) -> some View {
+        Text(text)
+            .font(.system(size: 11, weight: .semibold, design: .rounded))
+            .foregroundStyle(tint ?? Color.secondary)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background((tint ?? Color.secondary).opacity(tint == nil ? 0.10 : 0.14), in: Capsule())
+    }
+}
+
+/// The last row of the jobs list. A dashed outline rather than a filled card,
+/// so it reads as a slot waiting to be filled rather than as a job you have.
+private struct AddJobRow: View {
+    let first: Bool
+    let tint: Color
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "plus")
+                .font(.body.weight(.bold))
+                .foregroundStyle(tint)
+                .frame(width: 42, height: 42)
+                .background(tint.opacity(0.12),
+                            in: RoundedRectangle(cornerRadius: Palette.tileRadius, style: .continuous))
+
+            Text(first ? "Add your first job" : "Add a job")
+                .font(.system(.body, design: .rounded).weight(.semibold))
+                .foregroundStyle(tint)
 
             Spacer(minLength: 8)
-
-            if showsChevron {
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous)
+                .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [6, 5]))
+                .foregroundStyle(tint.opacity(0.35))
         }
         .contentShape(Rectangle())
     }
@@ -518,70 +664,103 @@ private struct JobRow: View {
 struct AllTimeCard: View {
     let jobs: [Job]
     let shifts: [Shift]
+    /// Your colour, so this card is the same object as the one on the tab.
+    var colour: JobColor = UserProfile.defaultColor
 
-    private var totalEarnings: Double { shifts.logged.reduce(0) { $0 + $1.totalPay } }
-    private var totalHours: Double { shifts.logged.reduce(0) { $0 + $1.hours } }
-    private var totalTips: Double { shifts.logged.reduce(0) { $0 + $1.tipsAmount } }
-    private var dayCount: Int { Set(shifts.logged.map(\.day)).count }
+    private var logged: [Shift] { shifts.logged }
+    private var totalEarnings: Double { logged.reduce(0) { $0 + $1.totalPay } }
+    private var totalHours: Double { logged.reduce(0) { $0 + $1.hours } }
+    private var totalTips: Double { logged.reduce(0) { $0 + $1.tipsAmount } }
+    private var dayCount: Int { Set(logged.map(\.day)).count }
 
-    private func stats(_ job: Job) -> ShiftStats {
-        ShiftStats(job: job, shifts: shifts.logged.filter { $0.job?.id == job.id })
+    private func earnings(of job: Job) -> Double {
+        logged.filter { $0.job?.id == job.id }.reduce(0) { $0 + $1.totalPay }
     }
 
+    /// The first day you logged, which is a truer "since" than the day the
+    /// app was installed.
+    private var since: Date {
+        logged.map(\.checkIn).min() ?? UserProfile.started
+    }
+
+    private var tracksTips: Bool { jobs.contains(where: \.tracksTips) }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Total earned")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 3) {
+                Eyebrow("Total earned", opacity: 1)
+                    .foregroundStyle(colour.color)
                 Text(Fmt.money(totalEarnings))
-                    .font(.system(.largeTitle, design: .rounded).weight(.bold))
-                    .foregroundStyle(Palette.money)
+                    .font(.system(size: 40, weight: .bold, design: .rounded))
+                    .monospacedDigit()
                     .contentTransition(.numericText())
                     .minimumScaleFactor(0.6)
                     .lineLimit(1)
+                Text("since \(Fmt.monthTitle(since))")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
 
-            StatGrid {
-                StatTile(
-                    title: "Total hours",
-                    value: Fmt.hours(totalHours),
-                    caption: "\(Fmt.count(dayCount, "day")) · \(Fmt.count(shifts.count, "shift"))",
-                    background: Color(.tertiarySystemFill)
-                )
-                if jobs.contains(where: \.tracksTips) {
-                    let tipped = shifts.filter { $0.job?.tracksTips == true }
-                    StatTile(
-                        title: "Tips",
-                        value: Fmt.money(totalTips),
-                        caption: "Avg \(Fmt.money(tipped.isEmpty ? 0 : totalTips / Double(tipped.count)))/shift",
-                        background: Color(.tertiarySystemFill)
-                    )
-                } else {
-                    StatTile(
-                        title: "Avg per day",
-                        value: Fmt.hours(dayCount == 0 ? 0 : totalHours / Double(dayCount)),
-                        background: Color(.tertiarySystemFill)
-                    )
-                }
-                // With one job its tile would only repeat the totals above.
-                if jobs.count > 1 {
+            // The same bar as the outlook card, split by job instead of by
+            // certainty — so two cards that both break a total down break it
+            // down the same way.
+            if jobs.count > 1 && totalEarnings > 0 {
+                ProportionBar(parts: jobs.map {
+                    .init(value: earnings(of: $0), colour: $0.tint, style: .solid)
+                })
+
+                VStack(spacing: 8) {
                     ForEach(jobs) { job in
-                        let s = stats(job)
-                        StatTile(
-                            title: job.displayName,
-                            value: Fmt.money(s.totalEarnings),
-                            caption: "\(Fmt.hours(s.totalHours)) · avg \(Fmt.hours(s.averageHoursPerDay))/day",
-                            tint: job.tint,
-                            background: Color(.tertiarySystemFill)
-                        )
+                        HStack(spacing: 8) {
+                            Circle().fill(job.tint).frame(width: 7, height: 7)
+                            Text(job.displayName).font(.subheadline)
+                            Spacer(minLength: 8)
+                            Text(Fmt.money(earnings(of: job)))
+                                .font(.subheadline.weight(.semibold))
+                                .monospacedDigit()
+                                .foregroundStyle(job.tint)
+                        }
                     }
                 }
             }
+
+            Divider()
+
+            HStack(spacing: 0) {
+                figure("Hours", Fmt.hours(totalHours))
+                figure("Days", "\(dayCount)")
+                if tracksTips {
+                    figure("Tips", Fmt.money(totalTips))
+                } else {
+                    figure("Per day", Fmt.hours(dayCount == 0 ? 0 : totalHours / Double(dayCount)))
+                }
+            }
         }
-        .padding(14)
+        .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+        .background {
+            RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous)
+                .fill(Color(.secondarySystemGroupedBackground))
+                .overlay {
+                    RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous)
+                        .fill(LinearGradient(colors: [colour.color.opacity(0.10), .clear],
+                                             startPoint: .top, endPoint: .bottom))
+                }
+        }
+    }
+
+    private func figure(_ label: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.system(size: 17, weight: .semibold, design: .rounded))
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -681,7 +860,7 @@ struct ProfileEditorView: View {
 
                 if !allShifts.isEmpty {
                     Section {
-                        AllTimeCard(jobs: jobs, shifts: allShifts)
+                        AllTimeCard(jobs: jobs, shifts: allShifts, colour: color)
                             .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
                             .listRowBackground(Color.clear)
                     } header: {
@@ -701,7 +880,6 @@ struct ProfileEditorView: View {
             }
         }
         .tint(color.color)
-        .appAppearance()
     }
 
     // MARK: - Pieces
@@ -844,7 +1022,6 @@ struct SettingsView: View {
             }
         }
         .tint(accent)
-        .appAppearance()
     }
 
     // MARK: - Cards

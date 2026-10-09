@@ -70,7 +70,6 @@ struct MarkPaidSheet: View {
             }
         }
         .tint(job.tint)
-        .appAppearance()
     }
 
     // MARK: - Cards

@@ -148,23 +148,57 @@ extension View {
     }
 }
 
-extension View {
-    /// Forces the chosen theme on this view.
-    ///
-    /// A sheet is presented in its own window scene, and `preferredColorScheme`
-    /// set on the tab tree doesn't reliably reach it: switching to dark left
-    /// the sheet on the light scheme it was born with, while the app behind it
-    /// changed. Applying it at each sheet's root settles it.
-    func appAppearance() -> some View {
-        modifier(AppAppearance())
+/// The chosen theme, applied to the window rather than to a view.
+///
+/// `preferredColorScheme` left sheets behind. Going from Light back to
+/// System changed the app but not the open sheet, because a view that has
+/// once been handed a concrete scheme doesn't go back when it's later handed
+/// `nil` — and a sheet, presented in its own context, kept the one it was
+/// born with. The override belongs to the window every sheet is presented
+/// in, where `.unspecified` really does mean "whatever the phone says".
+enum AppAppearance {
+    static func apply(_ appearance: Appearance) {
+        let style: UIUserInterfaceStyle = {
+            switch appearance {
+            case .system: return .unspecified
+            case .light: return .light
+            case .dark: return .dark
+            }
+        }()
+        let windows = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+
+        // At launch the first `onAppear` can land before the window exists,
+        // which would leave the setting unapplied until it next changed.
+        guard !windows.isEmpty else {
+            DispatchQueue.main.async { apply(appearance) }
+            return
+        }
+
+        for window in windows {
+            window.overrideUserInterfaceStyle = style
+        }
     }
 }
 
-private struct AppAppearance: ViewModifier {
+extension View {
+    /// Keeps the window's appearance in step with the setting. Applied once,
+    /// at the root — everything presented from there inherits it.
+    func appAppearance() -> some View {
+        modifier(AppearanceWatcher())
+    }
+}
+
+private struct AppearanceWatcher: ViewModifier {
     @AppStorage(Appearance.key) private var raw: String = Appearance.system.rawValue
 
     func body(content: Content) -> some View {
-        content.preferredColorScheme(Appearance(rawValue: raw)?.colorScheme)
+        content
+            .onAppear { AppAppearance.apply(Appearance(rawValue: raw) ?? .system) }
+            .onChange(of: raw) { _, new in
+                AppAppearance.apply(Appearance(rawValue: new) ?? .system)
+            }
     }
 }
 
@@ -206,5 +240,55 @@ struct ProportionBar: View {
             }
         }
         .frame(height: height)
+    }
+}
+
+/// A compact segmented control in the app's own language — a pill that slides
+/// along a faint track. The stock segmented picker is the most recognisably
+/// system-issued control there is, and two of them stacked made the chart
+/// look like a settings pane with a graph attached.
+struct ChipPicker<Value: Hashable>: View {
+    struct Option: Identifiable {
+        let value: Value
+        let label: String
+        var id: Value { value }
+
+        init(_ value: Value, _ label: String) {
+            self.value = value
+            self.label = label
+        }
+    }
+
+    let options: [Option]
+    @Binding var selection: Value
+    var tint: Color = Palette.brand
+
+    @Namespace private var pill
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(options) { option in
+                let isOn = option.value == selection
+                Button {
+                    withAnimation(.snappy(duration: 0.22)) { selection = option.value }
+                } label: {
+                    Text(option.label)
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .foregroundStyle(isOn ? .white : Color.secondary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background {
+                            if isOn {
+                                Capsule()
+                                    .fill(tint)
+                                    .matchedGeometryEffect(id: "pill", in: pill)
+                            }
+                        }
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(3)
+        .background(Color(.tertiarySystemFill), in: Capsule())
     }
 }

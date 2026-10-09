@@ -45,6 +45,24 @@ enum Fmt {
     }
 
     /// "1 shift" / "3 shifts".
+    /// The currency's symbol on its own — read out of a formatted zero,
+    /// because `Locale` will name a currency but won't hand over its symbol
+    /// for an arbitrary code.
+    static var currencySymbol: String {
+        let sample = (0.0).formatted(.currency(code: AppSettings.currencyCode).precision(.fractionLength(0)))
+        let symbol = sample.filter { !$0.isNumber && !$0.isWhitespace && $0 != "," && $0 != "." }
+        return symbol.isEmpty ? AppSettings.currencyCode : symbol
+    }
+
+    /// An amount with the thousands rounded off, for an axis label where the
+    /// exact figure would be unreadable at ten points anyway.
+    static func compactMoney(_ value: Double) -> String {
+        let symbol = currencySymbol
+        guard abs(value) >= 1000 else { return "\(Int(value.rounded()))\(symbol)" }
+        let thousands = value / 1000
+        return String(format: "%.\(abs(thousands) >= 10 ? 0 : 1)fk", thousands) + symbol
+    }
+
     static func count(_ value: Int, _ noun: String) -> String {
         "\(value) \(noun)\(value == 1 ? "" : "s")"
     }

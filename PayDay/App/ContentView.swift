@@ -9,7 +9,6 @@ struct ContentView: View {
     /// A job's id, or `profileTag`. Stored, so the app reopens where you left
     /// it — and so the job editor can switch to a job it just created.
     @AppStorage("selectedTab") private var selectedTab = ""
-    @AppStorage(Appearance.key) private var appearanceRaw: String = Appearance.system.rawValue
     @AppStorage(UserProfile.colorKey) private var profileColorRaw = UserProfile.defaultColor.rawValue
     /// Not read here on purpose. Holding it at the root means changing the
     /// currency in Settings invalidates the whole tab tree, so every amount
@@ -54,7 +53,9 @@ struct ContentView: View {
         }
         .animation(.snappy, value: jobs.isEmpty)
         .fontDesign(.rounded)
-        .preferredColorScheme(Appearance(rawValue: appearanceRaw)?.colorScheme)
+        // Set on the window, not on this view, so an open sheet changes with
+        // the app instead of keeping the scheme it was presented in.
+        .appAppearance()
         // One recognizer on the window covers every screen, so tapping away
         // from a field closes the keyboard anywhere in the app.
         .onAppear { KeyboardDismisser.shared.install() }
