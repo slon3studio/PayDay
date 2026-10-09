@@ -167,3 +167,44 @@ private struct AppAppearance: ViewModifier {
         content.preferredColorScheme(Appearance(rawValue: raw)?.colorScheme)
     }
 }
+
+/// One bar split into parts, for showing a total's composition without
+/// three separate numbers having to be compared by eye.
+struct ProportionBar: View {
+    enum Style {
+        case solid, half, faint
+        var opacity: Double {
+            switch self {
+            case .solid: return 1
+            case .half: return 0.45
+            case .faint: return 0.18
+            }
+        }
+    }
+
+    struct Part {
+        let value: Double
+        let colour: Color
+        let style: Style
+    }
+
+    let parts: [Part]
+    var height: CGFloat = 10
+
+    private var total: Double { max(parts.reduce(0) { $0 + $1.value }, 0.0001) }
+
+    var body: some View {
+        GeometryReader { geometry in
+            HStack(spacing: 2) {
+                ForEach(Array(parts.enumerated()), id: \.offset) { _, part in
+                    if part.value > 0 {
+                        Capsule()
+                            .fill(part.colour.opacity(part.style.opacity))
+                            .frame(width: max(3, geometry.size.width * part.value / total))
+                    }
+                }
+            }
+        }
+        .frame(height: height)
+    }
+}

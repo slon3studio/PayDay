@@ -120,10 +120,18 @@ struct ProjectionCard: View {
         }
     }
 
+    /// What the guess is built on, so a figure you can't verify at least
+    /// says where it came from.
     private var estimatedDaysText: String {
         let days = projection.estimatedDays
         let count = days.rounded() == days ? "\(Int(days))" : String(format: "%.1f", days)
-        return "\(count) day\(days == 1 ? "" : "s") at \(Fmt.hours(projection.averageHoursPerDay))"
+        let basis: String
+        switch projection.basis {
+        case .pattern: basis = "your pattern"
+        case .weekdays: basis = "weekdays"
+        case .allDays: basis = "every day"
+        }
+        return "\(count) more day\(days == 1 ? "" : "s") by \(basis)"
     }
 
     // MARK: - Goal

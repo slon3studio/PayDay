@@ -154,7 +154,7 @@ struct ProfileView: View {
 
     private func projection(of job: Job) -> MonthProjection {
         let basis = ProjectionBasis(rawValue: UserDefaults.standard.string(forKey: job.projectionBasisKey) ?? "")
-            ?? (job.worksWeekends ? .pattern : .weekdays)
+            ?? .pattern
         return StatsEngine.projection(for: job, allShiftsForJob: shifts(of: job), basis: basis)
     }
 
@@ -162,9 +162,11 @@ struct ProfileView: View {
         jobs.map { ($0, projection(of: $0)) }
     }
 
-    /// Where the month lands across every job. One card rather than one per
-    /// job: a stack of near-identical cards was the reason this tab felt
-    /// busier than a job's own.
+    /// Where the month lands across every job.
+    ///
+    /// The headline gets a treatment nothing else on the screen has — the
+    /// three parts are one bar rather than three rows, so the proportion of
+    /// fact to guess is visible before a single number is read.
     private var outlookCard: some View {
         let all = projections
         let total = all.reduce(0) { $0 + $1.projection.projectedTotal }
@@ -172,50 +174,84 @@ struct ProfileView: View {
         let planned = all.reduce(0) { $0 + $1.projection.plannedPay }
         let estimated = max(0, total - worked - planned)
 
-        return VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 2) {
-                Eyebrow("Projected total", opacity: 1).foregroundStyle(.secondary)
-                MoneyText(amount: total, size: 34)
+        return VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 3) {
+                Eyebrow("Projected total", opacity: 1)
+                    .foregroundStyle(profileColor.color)
+                Text(Fmt.money(total))
+                    .font(.system(size: 44, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(1)
                 Text("by the end of \(Fmt.monthTitle(.now))")
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
 
-            // The same three-way split the job tabs use, so the two screens
-            // agree about what is known and what is guessed.
-            VStack(spacing: 7) {
-                outlookPart("Worked", worked, Palette.money)
-                if planned > 0 { outlookPart("Planned", planned, .secondary) }
-                outlookPart("Estimated", estimated, .secondary)
+            if total > 0 {
+                ProportionBar(parts: [
+                    .init(value: worked, colour: Palette.money, style: .solid),
+                    .init(value: planned, colour: Palette.money, style: .half),
+                    .init(value: estimated, colour: Palette.money, style: .faint),
+                ])
+            }
+
+            HStack(spacing: 0) {
+                outlookPart("Worked", worked, .solid)
+                outlookPart("Planned", planned, .half)
+                outlookPart("Estimated", estimated, .faint)
             }
 
             if jobs.count > 1 {
                 Divider()
-                VStack(spacing: 7) {
+                VStack(spacing: 8) {
                     ForEach(all, id: \.job.id) { entry in
-                        outlookPart(entry.job.displayName,
-                                    entry.projection.projectedTotal,
-                                    entry.job.tint)
+                        HStack(spacing: 8) {
+                            Circle().fill(entry.job.tint).frame(width: 7, height: 7)
+                            Text(entry.job.displayName).font(.subheadline)
+                            Spacer(minLength: 8)
+                            Text(Fmt.money(entry.projection.projectedTotal))
+                                .font(.subheadline.weight(.semibold))
+                                .monospacedDigit()
+                                .foregroundStyle(entry.job.tint)
+                        }
                     }
                 }
             }
         }
-        .cardSurface()
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous)
+                .fill(Color(.secondarySystemGroupedBackground))
+                .overlay {
+                    // A wash of your colour from the top, so the card carrying
+                    // the headline isn't the same slab as the ones under it.
+                    RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous)
+                        .fill(LinearGradient(colors: [profileColor.color.opacity(0.10), .clear],
+                                             startPoint: .top, endPoint: .bottom))
+                }
+        }
     }
 
-    private func outlookPart(_ label: String, _ amount: Double, _ tint: Color) -> some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(tint == .secondary ? Color.secondary.opacity(0.4) : tint)
-                .frame(width: 7, height: 7)
-            Text(label)
-                .font(.subheadline)
-            Spacer(minLength: 8)
+    private func outlookPart(_ label: String, _ amount: Double, _ style: ProportionBar.Style) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 5) {
+                Capsule()
+                    .fill(Palette.money.opacity(style.opacity))
+                    .frame(width: 10, height: 4)
+                Text(label)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
             Text(Fmt.money(amount))
                 .font(.subheadline.weight(.semibold))
                 .monospacedDigit()
-                .foregroundStyle(tint == .secondary ? Color.secondary : tint)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// Identity and this month in one card, in the app's own green — the
@@ -924,7 +960,7 @@ struct JobProjection: View {
     init(job: Job, shifts: [Shift]) {
         self.job = job
         self.shifts = shifts
-        let fallback: ProjectionBasis = job.worksWeekends ? .pattern : .weekdays
+        let fallback: ProjectionBasis = .pattern
         _basisRaw = AppStorage(wrappedValue: fallback.rawValue, job.projectionBasisKey)
     }
 
