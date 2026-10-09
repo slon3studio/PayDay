@@ -107,14 +107,6 @@ struct ProfileView: View {
                 }
 
                 Section {
-                    totalsCard
-                        .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
-                        .listRowBackground(Color.clear)
-                } header: {
-                    Text("All time")
-                }
-
-                Section {
                     trendChart
                 } header: {
                     Text(jobs.count > 1 ? "Compare" : "Trend")
@@ -330,62 +322,6 @@ struct ProfileView: View {
 
     // MARK: - Totals
 
-    private var totalsCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Total earned")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text(Fmt.money(totalEarnings))
-                    .font(.system(.largeTitle, design: .rounded).weight(.bold))
-                    .foregroundStyle(Palette.money)
-                    .contentTransition(.numericText())
-                    .minimumScaleFactor(0.6)
-                    .lineLimit(1)
-            }
-
-            StatGrid {
-                StatTile(
-                    title: "Total hours",
-                    value: Fmt.hours(totalHours),
-                    caption: "\(Fmt.count(dayCount, "day")) · \(Fmt.count(allShifts.count, "shift"))",
-                    background: Color(.tertiarySystemFill)
-                )
-                if jobs.contains(where: \.tracksTips) {
-                    let tipped = allShifts.filter { $0.job?.tracksTips == true }
-                    StatTile(
-                        title: "Tips",
-                        value: Fmt.money(totalTips),
-                        caption: "Avg \(Fmt.money(tipped.isEmpty ? 0 : totalTips / Double(tipped.count)))/shift",
-                        background: Color(.tertiarySystemFill)
-                    )
-                } else {
-                    StatTile(
-                        title: "Avg per day",
-                        value: Fmt.hours(dayCount == 0 ? 0 : totalHours / Double(dayCount)),
-                        background: Color(.tertiarySystemFill)
-                    )
-                }
-                // With one job its tile would only repeat the totals above.
-                if jobs.count > 1 {
-                    ForEach(jobs) { job in
-                        let s = stats(job)
-                        StatTile(
-                            title: job.displayName,
-                            value: Fmt.money(s.totalEarnings),
-                            caption: "\(Fmt.hours(s.totalHours)) · avg \(Fmt.hours(s.averageHoursPerDay))/day",
-                            tint: job.tint,
-                            background: Color(.tertiarySystemFill)
-                        )
-                    }
-                }
-            }
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
-    }
-
     private var trendChart: some View {
         VStack(spacing: 12) {
             Picker("Metric", selection: $metric.animation(.default)) {
@@ -482,6 +418,78 @@ private struct JobRow: View {
 
 /// One job's projection, with the remaining-days basis remembered per job —
 /// a weekday desk job and a weekend waiting job want different bases.
+/// Everything you've earned, ever — behind the profile card rather than on
+/// the tab, which is about the month in front of you.
+struct AllTimeCard: View {
+    let jobs: [Job]
+    let shifts: [Shift]
+
+    private var totalEarnings: Double { shifts.reduce(0) { $0 + $1.totalPay } }
+    private var totalHours: Double { shifts.reduce(0) { $0 + $1.hours } }
+    private var totalTips: Double { shifts.reduce(0) { $0 + $1.tipsAmount } }
+    private var dayCount: Int { Set(shifts.map(\.day)).count }
+
+    private func stats(_ job: Job) -> ShiftStats {
+        ShiftStats(job: job, shifts: shifts.filter { $0.job?.id == job.id })
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Total earned")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(Fmt.money(totalEarnings))
+                    .font(.system(.largeTitle, design: .rounded).weight(.bold))
+                    .foregroundStyle(Palette.money)
+                    .contentTransition(.numericText())
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(1)
+            }
+
+            StatGrid {
+                StatTile(
+                    title: "Total hours",
+                    value: Fmt.hours(totalHours),
+                    caption: "\(Fmt.count(dayCount, "day")) · \(Fmt.count(shifts.count, "shift"))",
+                    background: Color(.tertiarySystemFill)
+                )
+                if jobs.contains(where: \.tracksTips) {
+                    let tipped = shifts.filter { $0.job?.tracksTips == true }
+                    StatTile(
+                        title: "Tips",
+                        value: Fmt.money(totalTips),
+                        caption: "Avg \(Fmt.money(tipped.isEmpty ? 0 : totalTips / Double(tipped.count)))/shift",
+                        background: Color(.tertiarySystemFill)
+                    )
+                } else {
+                    StatTile(
+                        title: "Avg per day",
+                        value: Fmt.hours(dayCount == 0 ? 0 : totalHours / Double(dayCount)),
+                        background: Color(.tertiarySystemFill)
+                    )
+                }
+                // With one job its tile would only repeat the totals above.
+                if jobs.count > 1 {
+                    ForEach(jobs) { job in
+                        let s = stats(job)
+                        StatTile(
+                            title: job.displayName,
+                            value: Fmt.money(s.totalEarnings),
+                            caption: "\(Fmt.hours(s.totalHours)) · avg \(Fmt.hours(s.averageHoursPerDay))/day",
+                            tint: job.tint,
+                            background: Color(.tertiarySystemFill)
+                        )
+                    }
+                }
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+    }
+}
+
 private struct JobProjection: View {
     let job: Job
     let shifts: [Shift]
@@ -555,8 +563,14 @@ struct ProfileAvatar: View {
 
 /// Who you are: an emoji, a name, what you do, and your colour. Changes apply
 /// as you make them.
+/// Who you are, and everything you've earned. A wall of thirty emoji made
+/// this look like a sticker picker; it's now a short, restrained row that
+/// previews the avatar itself rather than offering a keyboard.
 struct ProfileEditorView: View {
     @Environment(\.dismiss) private var dismiss
+
+    @Query(sort: [SortDescriptor(\Job.sortOrder), SortDescriptor(\Job.createdAt)]) private var jobs: [Job]
+    @Query(sort: \Shift.checkIn, order: .reverse) private var allShifts: [Shift]
 
     @AppStorage(UserProfile.nameKey) private var name = ""
     @AppStorage(UserProfile.roleKey) private var role = ""
@@ -565,94 +579,51 @@ struct ProfileEditorView: View {
 
     private var color: JobColor { JobColor(rawValue: colorRaw) ?? UserProfile.defaultColor }
 
-    private static let emojis = [
-        "🙂", "😎", "🤓", "🥳", "😺", "🐱", "🦊", "🐶", "🐼", "🐸",
-        "🦁", "🐧", "🧑‍💻", "👩‍💻", "👨‍💻", "🧑‍🍳", "👩‍🎓", "🧑‍🎨", "☕️", "🍕",
-        "🎧", "🎨", "📚", "💼", "🚀", "⚡️", "🔥", "🌈", "🍀", "🌻",
-    ]
+    /// Kept short and even-tempered. The long list was the problem.
+    private static let emojis = ["🙂", "😎", "🧑‍💻", "🧑‍🍳", "🎧", "☕️", "📚", "⚡️"]
 
     var body: some View {
         NavigationStack {
             Form {
                 Section {
-                    VStack(spacing: 8) {
-                        ProfileAvatar(emoji: emoji, name: name, color: color, size: 88)
-                        Text(name.isEmpty ? "Your name" : name)
-                            .font(.title3.weight(.semibold))
-                            .foregroundStyle(name.isEmpty ? .secondary : .primary)
-                        if !role.isEmpty {
-                            Text(role)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 6)
-                    .listRowBackground(Color.clear)
-                    .animation(.snappy, value: emoji)
-                    .animation(.snappy, value: colorRaw)
+                    header
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
                 }
 
                 Section {
-                    TextField("Name", text: $name)
-                        .textContentType(.name)
-                    TextField("What you do — e.g. Student", text: $role)
-                } header: {
-                    Text("You")
+                    LabeledContent("Name") {
+                        TextField("Your name", text: $name)
+                            .textContentType(.name)
+                            .multilineTextAlignment(.trailing)
+                    }
+                    LabeledContent("Role") {
+                        TextField("Optional", text: $role)
+                            .multilineTextAlignment(.trailing)
+                    }
                 } footer: {
-                    Text("Only kept on this phone. No account needed.")
+                    Text("Kept on this phone and in your own iCloud. There is no account.")
                 }
 
                 Section {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 6), spacing: 6) {
-                        ForEach(Self.emojis, id: \.self) { option in
-                            Button {
-                                emoji = option
-                            } label: {
-                                Text(option)
-                                    .font(.title2)
-                                    .frame(width: 44, height: 44)
-                                    .background(
-                                        option == emoji ? AnyShapeStyle(color.color.opacity(0.25)) : AnyShapeStyle(Color.clear),
-                                        in: RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    )
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityAddTraits(option == emoji ? .isSelected : [])
-                        }
-                    }
-                    .padding(.vertical, 4)
-
-                    if !emoji.isEmpty {
-                        Button("Use my initials instead") { emoji = "" }
-                    }
+                    avatarRow
+                    colourRow
                 } header: {
-                    Text("Emoji")
+                    Text("Appearance")
+                } footer: {
+                    Text("Your colour tints the Profile tab.")
                 }
 
-                Section("Colour") {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 5), spacing: 12) {
-                        ForEach(JobColor.allCases) { option in
-                            Button {
-                                colorRaw = option.rawValue
-                            } label: {
-                                Circle()
-                                    .fill(option.color)
-                                    .frame(width: 40, height: 40)
-                                    .overlay {
-                                        if option == color {
-                                            Image(systemName: "checkmark")
-                                                .font(.headline.weight(.bold))
-                                                .foregroundStyle(.white)
-                                        }
-                                    }
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel(option.label)
-                            .accessibilityAddTraits(option == color ? .isSelected : [])
-                        }
+                if !allShifts.isEmpty {
+                    Section {
+                        AllTimeCard(jobs: jobs, shifts: allShifts)
+                            .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
+                            .listRowBackground(Color.clear)
+                    } header: {
+                        Text("All time")
+                    } footer: {
+                        Text("Everything logged since you started, across every job.")
                     }
-                    .padding(.vertical, 6)
                 }
             }
             .scrollDismissesKeyboard(.interactively)
@@ -666,12 +637,113 @@ struct ProfileEditorView: View {
         }
         .tint(color.color)
     }
+
+    // MARK: - Pieces
+
+    private var header: some View {
+        VStack(spacing: 10) {
+            ProfileAvatar(emoji: emoji, name: name, color: color, size: 88)
+            VStack(spacing: 2) {
+                Text(name.isEmpty ? "Your name" : name)
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(name.isEmpty ? .secondary : .primary)
+                if !role.isEmpty {
+                    Text(role)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 20)
+        .animation(.snappy, value: emoji)
+        .animation(.snappy, value: colorRaw)
+    }
+
+    /// Each option drawn as the avatar it would produce, so the row is a
+    /// preview rather than a list of characters.
+    private var avatarRow: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Avatar")
+                .font(.subheadline)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    swatch(isSelected: emoji.isEmpty) {
+                        emoji = ""
+                    } content: {
+                        Text(initials.isEmpty ? "AB" : initials)
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .opacity(initials.isEmpty ? 0.5 : 1)
+                    }
+
+                    ForEach(Self.emojis, id: \.self) { option in
+                        swatch(isSelected: option == emoji) {
+                            emoji = option
+                        } content: {
+                            Text(option).font(.title3)
+                        }
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func swatch<Content: View>(
+        isSelected: Bool,
+        action: @escaping () -> Void,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        Button(action: action) {
+            content()
+                .frame(width: 44, height: 44)
+                .background(
+                    LinearGradient(colors: [color.color, color.gradientEnd],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing),
+                    in: Circle()
+                )
+                .overlay(Circle().strokeBorder(Color.primary.opacity(isSelected ? 0.9 : 0), lineWidth: 2))
+                .padding(2)
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private var colourRow: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Colour")
+                .font(.subheadline)
+
+            HStack(spacing: 0) {
+                ForEach(JobColor.allCases) { option in
+                    Button {
+                        colorRaw = option.rawValue
+                    } label: {
+                        Circle()
+                            .fill(option.color)
+                            .frame(width: 26, height: 26)
+                            .overlay(Circle().strokeBorder(.background, lineWidth: option == color ? 2 : 0))
+                            .overlay(Circle().strokeBorder(Color.primary.opacity(option == color ? 0.9 : 0), lineWidth: 2)
+                                .padding(-3))
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(option.label)
+                    .accessibilityAddTraits(option == color ? .isSelected : [])
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var initials: String {
+        String(name.split(separator: " ").prefix(2).compactMap(\.first)).uppercased()
+    }
 }
 
-// MARK: - Settings
-
-/// How the app looks. Your details live behind the profile card; each job's
-/// settings in its editor.
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
 

@@ -139,85 +139,20 @@ struct ShiftEditorView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
+            ScrollView {
+                VStack(spacing: 16) {
                     summary
-                        .listRowInsets(EdgeInsets())
-                        .listRowBackground(Color.clear)
+                    timesCard
+                    if job.tracksTips { tipsCard }
+                    if job.tracksBreaks { breakCard }
+                    noteCard
+                    if let shift = target.existing { deleteButton(shift) }
                 }
-
-                Section {
-                    dateRow
-                    DatePicker("Check in", selection: $checkInTime, displayedComponents: .hourAndMinute)
-                    DatePicker("Check out", selection: $checkOutTime, displayedComponents: .hourAndMinute)
-                } footer: {
-                    if isOvernight {
-                        Label("Ends the next morning — counted on \(Fmt.dayHeader(Calendar.current.startOfDay(for: resolvedCheckIn))).",
-                              systemImage: "moon.stars")
-                    }
-                }
-
-                if job.tracksTips {
-                    Section("Tips") {
-                        HStack {
-                            Text("Tips earned")
-                            Spacer()
-                            TextField("0.00", text: $tipsText)
-                                .keyboardType(.decimalPad)
-                                .multilineTextAlignment(.trailing)
-                                .frame(maxWidth: 120)
-                            Text("€").foregroundStyle(.secondary)
-                        }
-                    }
-                }
-
-                if job.tracksBreaks {
-                    Section {
-                        Picker("Unpaid break", selection: $breakMinutes) {
-                            Text("None").tag(0)
-                            ForEach([15, 20, 30, 45, 60], id: \.self) { minutes in
-                                Text("\(minutes) min").tag(minutes)
-                            }
-                        }
-                    } footer: {
-                        Text("Comes off the hours this shift counts for.")
-                    }
-                }
-
-                Section("Note") {
-                    TextField("Optional", text: $note, axis: .vertical)
-                        .lineLimit(1...3)
-                }
-
-                if breakMinutes > 0 {
-                    Section {
-                        StatRow(label: "On the clock", value: Fmt.hours(span))
-                        StatRow(label: "Unpaid break", value: "−\(breakMinutes) min")
-                        StatRow(label: "Counts as", value: Fmt.hours(duration), emphasized: true, tint: job.tint)
-                    } header: {
-                        Text("Hours")
-                    }
-                }
-
-                if let shift = target.existing {
-                    Section {
-                        Button(role: .destructive) {
-                            confirmingDelete = true
-                        } label: {
-                            Label("Delete shift", systemImage: "trash")
-                                .frame(maxWidth: .infinity)
-                        }
-                        // An alert rather than a confirmation dialog, which
-                        // iOS 26 shows as a popover pinned to the button.
-                        .alert("Delete this shift?", isPresented: $confirmingDelete) {
-                            Button("Delete", role: .destructive) { delete(shift) }
-                            Button("Keep", role: .cancel) {}
-                        } message: {
-                            Text("\(Fmt.dayHeader(shift.day)) · \(Fmt.time(shift.checkIn))–\(Fmt.time(shift.checkOut))")
-                        }
-                    }
-                }
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 32)
             }
+            .background(Color(.systemGroupedBackground))
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle(navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
@@ -234,75 +169,241 @@ struct ShiftEditorView: View {
         .tint(job.tint)
     }
 
-    // MARK: - Summary
 
-    /// The shift as it currently stands, in the job's own colours — the same
-    /// card the job's tab opens with, scaled down to one shift.
-    private var summary: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Text(Fmt.dayHeader(Calendar.current.startOfDay(for: resolvedCheckIn)).uppercased())
-                    .font(.caption.weight(.semibold))
-                    .tracking(0.6)
-                Spacer()
-                Image(systemName: job.symbol)
-            }
-            .opacity(0.85)
+    // MARK: - Cards
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(Fmt.money(duration * rate + (job.tracksTips ? tipsValue : 0)))
-                    .font(.system(size: 40, weight: .bold, design: .rounded))
-                    .monospacedDigit()
-                    .contentTransition(.numericText())
-                    .minimumScaleFactor(0.6)
-                    .lineLimit(1)
-                Text("\(Fmt.time(resolvedCheckIn)) → \(Fmt.time(resolvedCheckOut))\(isOvernight ? " +1" : "") · \(Fmt.hours(duration))")
-                    .font(.subheadline)
-                    .opacity(0.85)
-            }
-
+    /// Date and both times in one block, with the times as the big values
+    /// they are rather than two rows that look like settings.
+    private var timesCard: some View {
+        VStack(spacing: 0) {
             HStack(spacing: 0) {
-                heroStat("Hours", Fmt.hours(duration))
-                heroDivider
-                heroStat("Base pay", Fmt.money(duration * rate))
-                heroDivider
-                if job.tracksTips {
-                    heroStat("Tips", Fmt.money(tipsValue))
-                } else {
-                    heroStat("Rate", "\(Fmt.money(rate))/h")
-                }
+                timeBlock("Starts", selection: $checkInTime)
+                Rectangle()
+                    .fill(Color(.separator).opacity(0.5))
+                    .frame(width: 1, height: 46)
+                timeBlock("Ends", selection: $checkOutTime, badge: isOvernight ? "+1" : nil)
+            }
+            .padding(.vertical, 14)
+
+            Divider().padding(.leading, 16)
+
+            HStack {
+                Label("Date", systemImage: "calendar")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                dateRow
+                    .labelsHidden()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+
+            if isOvernight {
+                Divider().padding(.leading, 16)
+                Label("Ends the next morning — counted on \(Fmt.dayHeader(Calendar.current.startOfDay(for: resolvedCheckIn))).",
+                      systemImage: "moon.stars")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
             }
         }
-        .foregroundStyle(.white)
-        .padding(18)
+        .background(Color(.secondarySystemGroupedBackground),
+                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+    }
+
+    private func timeBlock(_ label: String, selection: Binding<Date>, badge: String? = nil) -> some View {
+        VStack(spacing: 4) {
+            HStack(spacing: 5) {
+                Text(label.uppercased())
+                    .font(.caption2.weight(.semibold))
+                    .tracking(0.5)
+                    .foregroundStyle(.secondary)
+                if let badge {
+                    Text(badge)
+                        .font(.system(size: 9, weight: .bold))
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(job.tint.opacity(0.18), in: Capsule())
+                        .foregroundStyle(job.tint)
+                }
+            }
+            DatePicker("", selection: selection, displayedComponents: .hourAndMinute)
+                .labelsHidden()
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var tipsCard: some View {
+        HStack {
+            Label("Tips earned", systemImage: "banknote")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Spacer()
+            TextField("0", text: $tipsText)
+                .keyboardType(.decimalPad)
+                .multilineTextAlignment(.trailing)
+                .monospacedDigit()
+                .font(.title3.weight(.semibold))
+                .frame(maxWidth: 130)
+            Text("€")
+                .font(.title3)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(Color(.secondarySystemGroupedBackground),
+                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+    }
+
+    private var breakCard: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Label("Unpaid break", systemImage: "cup.and.saucer")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Picker("", selection: $breakMinutes.animation(.snappy)) {
+                    Text("None").tag(0)
+                    ForEach([15, 20, 30, 45, 60], id: \.self) { Text("\($0) min").tag($0) }
+                }
+                .labelsHidden()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+
+            if breakMinutes > 0 {
+                Divider().padding(.leading, 16)
+                HStack(spacing: 0) {
+                    breakStat("On the clock", Fmt.hours(span), .secondary)
+                    breakStat("Break", "−\(breakMinutes)m", .secondary)
+                    breakStat("Counts as", Fmt.hours(duration), job.tint)
+                }
+                .padding(.vertical, 12)
+            }
+        }
+        .background(Color(.secondarySystemGroupedBackground),
+                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+    }
+
+    private func breakStat(_ label: String, _ value: String, _ tint: Color) -> some View {
+        VStack(spacing: 2) {
+            Text(value)
+                .font(.subheadline.weight(.semibold))
+                .monospacedDigit()
+                .foregroundStyle(tint)
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var noteCard: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("NOTE")
+                .font(.caption2.weight(.semibold))
+                .tracking(0.5)
+                .foregroundStyle(.secondary)
+            TextField("Anything worth remembering", text: $note, axis: .vertical)
+                .lineLimit(1...4)
+        }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(Color(.secondarySystemGroupedBackground),
+                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+    }
+
+    private func deleteButton(_ shift: Shift) -> some View {
+        Button(role: .destructive) {
+            confirmingDelete = true
+        } label: {
+            Label("Delete shift", systemImage: "trash")
+                .font(.subheadline.weight(.medium))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+        }
+        .background(Color(.secondarySystemGroupedBackground),
+                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+        // An alert rather than a confirmation dialog, which iOS 26 shows as a
+        // popover pinned to the button.
+        .alert("Delete this shift?", isPresented: $confirmingDelete) {
+            Button("Delete", role: .destructive) { delete(shift) }
+            Button("Keep", role: .cancel) {}
+        } message: {
+            Text("\(Fmt.dayHeader(shift.day)) · \(Fmt.time(shift.checkIn))–\(Fmt.time(shift.checkOut))")
+        }
+    }
+
+    // MARK: - Summary
+
+    /// The shift as it currently stands.
+    ///
+    /// Deliberately not the job tab's card. That one is a full gradient
+    /// because it's the first thing you see and it owns the screen; copying it
+    /// here would make the sheet read as the same card twice. This is a plain
+    /// surface with the job's colour as a rail down the side — related, not
+    /// identical — and it follows the app's rule: money green, hours in the
+    /// job's colour.
+    private var summary: some View {
+        HStack(spacing: 0) {
             LinearGradient(colors: [job.tint, job.gradientEnd],
-                           startPoint: .topLeading, endPoint: .bottomTrailing),
-            in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous)
-        )
+                           startPoint: .top, endPoint: .bottom)
+                .frame(width: 6)
+
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text(Fmt.dayHeader(Calendar.current.startOfDay(for: resolvedCheckIn)).uppercased())
+                        .font(.caption2.weight(.semibold))
+                        .tracking(0.6)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Image(systemName: job.symbol)
+                        .font(.footnote)
+                        .foregroundStyle(job.tint)
+                }
+
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Text(Fmt.money(duration * rate + (job.tracksTips ? tipsValue : 0)))
+                        .font(.system(size: 34, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(Palette.money)
+                        .contentTransition(.numericText())
+                        .minimumScaleFactor(0.6)
+                        .lineLimit(1)
+
+                    Spacer(minLength: 0)
+
+                    Text(Fmt.hours(duration))
+                        .font(.headline)
+                        .monospacedDigit()
+                        .foregroundStyle(job.tint)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(job.tint.opacity(0.14), in: Capsule())
+                }
+
+                Text(detail)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
         .animation(.snappy, value: duration)
     }
 
-    private func heroStat(_ label: String, _ value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(value)
-                .font(.headline)
-                .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            Text(label)
-                .font(.caption2)
-                .opacity(0.8)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var heroDivider: some View {
-        Rectangle()
-            .fill(.white.opacity(0.3))
-            .frame(width: 1, height: 28)
-            .padding(.trailing, 12)
+    /// "17:00 → 23:30 · 11,40 €/h · 30m break"
+    private var detail: String {
+        var parts = ["\(Fmt.time(resolvedCheckIn)) → \(Fmt.time(resolvedCheckOut))\(isOvernight ? " +1" : "")"]
+        parts.append("\(Fmt.money(rate))/h")
+        if breakMinutes > 0 { parts.append("\(breakMinutes)m break") }
+        return parts.joined(separator: " · ")
     }
 
     // MARK: - Saving
