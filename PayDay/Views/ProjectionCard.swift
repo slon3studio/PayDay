@@ -6,6 +6,9 @@ import SwiftUI
 struct ProjectionCard: View {
     let projection: MonthProjection
     @Binding var basis: ProjectionBasis
+    /// Profile's colour. These cards sit on the Profile tab, so the control
+    /// on them answers to you, not to the job they describe.
+    var accent: Color = Palette.brand
 
     private var job: Job { projection.job }
     private var goalTarget: Double { job.goalTarget }
@@ -85,19 +88,19 @@ struct ProjectionCard: View {
             }
 
             VStack(alignment: .leading, spacing: 6) {
-                Picker("Remaining days", selection: $basis.animation(.default)) {
-                    ForEach(ProjectionBasis.allCases) { Text($0.rawValue).tag($0) }
-                }
-                .pickerStyle(.segmented)
+                ChipPicker(
+                    options: ProjectionBasis.allCases.map { .init($0, $0.rawValue) },
+                    selection: $basis,
+                    tint: accent
+                )
 
                 Text(basis.explanation)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+        .washedCard(job.tint, strength: 0.09, padding: 14)
     }
 
     /// One line of the split: what it comes to, and what it rests on.
@@ -120,18 +123,13 @@ struct ProjectionCard: View {
         }
     }
 
-    /// What the guess is built on, so a figure you can't verify at least
-    /// says where it came from.
+    /// Just the count. Which basis produced it is on the control below and
+    /// spelled out under it — a third copy on the figure itself only made
+    /// the line long.
     private var estimatedDaysText: String {
         let days = projection.estimatedDays
         let count = days.rounded() == days ? "\(Int(days))" : String(format: "%.1f", days)
-        let basis: String
-        switch projection.basis {
-        case .pattern: basis = "your pattern"
-        case .weekdays: basis = "weekdays"
-        case .allDays: basis = "every day"
-        }
-        return "\(count) more day\(days == 1 ? "" : "s") by \(basis)"
+        return "\(count) more day\(days == 1 ? "" : "s")"
     }
 
     // MARK: - Goal

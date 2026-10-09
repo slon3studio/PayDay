@@ -135,19 +135,6 @@ struct EmptyState: View {
     }
 }
 
-extension View {
-    /// A card's padding and background, for the ones built by hand rather
-    /// than out of a Form section.
-    func cardSurface(padding: CGFloat = 16) -> some View {
-        self.padding(.horizontal, padding)
-            .padding(.vertical, 14)
-            .background(
-                Color(.secondarySystemGroupedBackground),
-                in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous)
-            )
-    }
-}
-
 /// The chosen theme, applied to the window rather than to a view.
 ///
 /// `preferredColorScheme` left sheets behind. Going from Light back to
@@ -290,5 +277,62 @@ struct ChipPicker<Value: Hashable>: View {
         }
         .padding(3)
         .background(Color(.tertiarySystemFill), in: Capsule())
+    }
+}
+
+extension View {
+    /// A card carrying a wash of the colour of whatever the screen is about —
+    /// the job on a job tab, you on Profile. It's what stops a screen reading
+    /// as a stack of identical grey slabs that could belong to any app.
+    ///
+    /// `strength` and the gradient's direction are the two dials: a card that
+    /// would otherwise look like the one above it takes a different one.
+    func washedCard(
+        _ colour: Color,
+        strength: Double = 0.10,
+        padding: CGFloat = 16,
+        from start: UnitPoint = .top,
+        to end: UnitPoint = .bottom
+    ) -> some View {
+        self.padding(padding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background {
+                RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous)
+                    .fill(Color(.secondarySystemGroupedBackground))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous)
+                            .fill(LinearGradient(colors: [colour.opacity(strength), .clear],
+                                                 startPoint: start, endPoint: end))
+                    }
+            }
+    }
+}
+
+extension View {
+    /// `washedCard`'s background alone, for a card that already lays out its
+    /// own padding — a stack of rows with dividers between them.
+    func washedSurface(_ colour: Color, strength: Double = 0.09) -> some View {
+        self.background {
+            RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous)
+                .fill(Color(.secondarySystemGroupedBackground))
+                .overlay {
+                    RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous)
+                        .fill(LinearGradient(colors: [colour.opacity(strength), .clear],
+                                             startPoint: .top, endPoint: .bottom))
+                }
+        }
+    }
+}
+
+/// The same wash at row scale, for a list section that belongs to one thing.
+/// A card per row would be noise; this keeps the section's shape and lets the
+/// colour through.
+struct TintedRow: View {
+    let colour: Color
+    var strength: Double = 0.07
+
+    var body: some View {
+        Color(.secondarySystemGroupedBackground)
+            .overlay(colour.opacity(strength))
     }
 }

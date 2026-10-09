@@ -95,7 +95,10 @@ struct MonthHeatmap: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 6)
-                    .strokeBorder(isOpen ? job.tint : (isToday ? Color.secondary : .clear), lineWidth: isOpen ? 2 : 1)
+                    // Today is ringed in the job's colour, the same as it is
+                    // on the week strip — grey read as "disabled".
+                    .strokeBorder(isOpen ? job.tint : (isToday ? job.tint.opacity(0.9) : .clear),
+                                  lineWidth: isOpen ? 2 : 1.5)
             )
         }
         .buttonStyle(.plain)

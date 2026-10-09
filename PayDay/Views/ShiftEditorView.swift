@@ -180,12 +180,13 @@ struct ShiftEditorView: View {
     /// they are rather than two rows that look like settings.
     private var timesCard: some View {
         VStack(spacing: 0) {
-            Picker("", selection: $isPlanned.animation(.snappy)) {
-                Text("Worked").tag(false)
-                Text("Planned").tag(true)
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
+            // The stock segmented control greys the selection, which on a
+            // screen that belongs to one job says nothing about which job.
+            ChipPicker(
+                options: [.init(false, "Worked"), .init(true, "Planned")],
+                selection: $isPlanned,
+                tint: job.tint
+            )
             .padding(.horizontal, 16)
             .padding(.top, 14)
             .padding(.bottom, 4)
@@ -223,8 +224,7 @@ struct ShiftEditorView: View {
                     .padding(.vertical, 10)
             }
         }
-        .background(Color(.secondarySystemGroupedBackground),
-                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+        .washedSurface(job.tint)
     }
 
     private func timeBlock(_ label: String, selection: Binding<Date>, badge: String? = nil) -> some View {
@@ -267,8 +267,7 @@ struct ShiftEditorView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
-        .background(Color(.secondarySystemGroupedBackground),
-                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+        .washedSurface(job.tint)
     }
 
     private var breakCard: some View {
@@ -297,8 +296,7 @@ struct ShiftEditorView: View {
                 .padding(.vertical, 12)
             }
         }
-        .background(Color(.secondarySystemGroupedBackground),
-                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+        .washedSurface(job.tint)
     }
 
     private func breakStat(_ label: String, _ value: String, _ tint: Color) -> some View {
@@ -326,8 +324,7 @@ struct ShiftEditorView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
-        .background(Color(.secondarySystemGroupedBackground),
-                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+        .washedSurface(job.tint)
     }
 
     private func deleteButton(_ shift: Shift) -> some View {
@@ -416,8 +413,7 @@ struct ShiftEditorView: View {
             .padding(.vertical, 14)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+        .washedSurface(job.tint)
         .animation(.snappy, value: duration)
     }
 

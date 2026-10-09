@@ -148,6 +148,7 @@ struct AllShiftsView: View {
                     } label: {
                         monthLabel(month)
                     }
+                    .listRowBackground(TintedRow(colour: job.tint))
                 }
             }
         }
@@ -343,6 +344,7 @@ struct TimesheetView: View {
             } header: {
                 SectionHeader("\(job.displayName) · \(Fmt.monthTitle(month))")
             }
+            .listRowBackground(TintedRow(colour: job.tint))
         }
         .listStyle(.insetGrouped)
         .navigationTitle("Timesheet")

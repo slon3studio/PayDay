@@ -241,7 +241,9 @@ struct JobEditorView: View {
                 .foregroundStyle(.tertiary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .cardSurface()
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .washedSurface(color.color)
     }
 
     private var appearanceCard: some View {
@@ -279,8 +281,7 @@ struct JobEditorView: View {
             .padding(.vertical, 14)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemGroupedBackground),
-                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+        .washedSurface(color.color)
     }
 
     private var payCard: some View {
@@ -317,8 +318,7 @@ struct JobEditorView: View {
                      ? "Turn Tips on for a job where you get them — waiting tables, a bar."
                      : "A new rate applies to shifts logged from now on; ones already logged keep theirs.")
         }
-        .background(Color(.secondarySystemGroupedBackground),
-                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+        .washedSurface(color.color)
     }
 
     private var shiftCard: some View {
@@ -344,8 +344,7 @@ struct JobEditorView: View {
 
             footnote("New shifts start out with these times. Weekends count toward the month's projection when on.")
         }
-        .background(Color(.secondarySystemGroupedBackground),
-                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+        .washedSurface(color.color)
     }
 
     private func timeBlock(_ label: String, selection: Binding<Date>) -> some View {
@@ -389,8 +388,7 @@ struct JobEditorView: View {
                      ? "Taken off the hours a shift counts for, and changeable per shift. Shifts already logged keep the hours they were logged with."
                      : "Leave off if your break is paid, or if there isn't one.")
         }
-        .background(Color(.secondarySystemGroupedBackground),
-                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+        .washedSurface(color.color)
     }
 
     private var goalCard: some View {
@@ -425,8 +423,7 @@ struct JobEditorView: View {
 
             footnote("Shown as progress on the job's tab and its projection. Leave blank for none.")
         }
-        .background(Color(.secondarySystemGroupedBackground),
-                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+        .washedSurface(color.color)
     }
 
     private var deleteButton: some View {

@@ -85,6 +85,12 @@ struct ProfileView: View {
                 HStack {
                     Text("Profile")
                         .font(.largeTitle.bold())
+                        // A grouped list clips each row at the card's edge,
+                        // and a rounded "g" or "j" at this size hangs well
+                        // past the left of its typographic box — the tail was
+                        // being sliced off. Indenting the text keeps the whole
+                        // glyph inside the clip.
+                        .padding(.leading, 10)
 
                     Spacer(minLength: 12)
 
@@ -100,7 +106,7 @@ struct ProfileView: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel("Settings")
                 }
-                .listRowInsets(EdgeInsets(top: 6, leading: 4, bottom: 0, trailing: 4))
+                .listRowInsets(EdgeInsets(top: 6, leading: 1, bottom: 0, trailing: 4))
                 .listRowBackground(Color.clear)
             }
 
@@ -121,7 +127,7 @@ struct ProfileView: View {
 
                 Section {
                     ForEach(jobs) { job in
-                        JobProjection(job: job, shifts: shifts(of: job))
+                        JobProjection(job: job, shifts: shifts(of: job), accent: profileColor.color)
                             .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
@@ -1131,12 +1137,15 @@ struct SettingsView: View {
 struct JobProjection: View {
     let job: Job
     let shifts: [Shift]
+    /// Your colour, for the control on the card. The card itself is the job's.
+    var accent: Color = Palette.brand
 
     @AppStorage private var basisRaw: String
 
-    init(job: Job, shifts: [Shift]) {
+    init(job: Job, shifts: [Shift], accent: Color = Palette.brand) {
         self.job = job
         self.shifts = shifts
+        self.accent = accent
         let fallback: ProjectionBasis = .pattern
         _basisRaw = AppStorage(wrappedValue: fallback.rawValue, job.projectionBasisKey)
     }
@@ -1151,7 +1160,8 @@ struct JobProjection: View {
     var body: some View {
         ProjectionCard(
             projection: StatsEngine.projection(for: job, allShiftsForJob: shifts, basis: basis.wrappedValue),
-            basis: basis
+            basis: basis,
+            accent: accent
         )
     }
 }

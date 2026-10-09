@@ -76,6 +76,12 @@ struct JobView: View {
                 HStack {
                     Text(job.displayName)
                         .font(.largeTitle.bold())
+                        // A grouped list clips each row at the card's edge,
+                        // and a rounded "g" or "j" at this size hangs well
+                        // past the left of its typographic box — the tail was
+                        // being sliced off. Indenting the text keeps the whole
+                        // glyph inside the clip.
+                        .padding(.leading, 10)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
 
@@ -93,7 +99,7 @@ struct JobView: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel("Log shift")
                 }
-                .listRowInsets(EdgeInsets(top: 6, leading: 4, bottom: 0, trailing: 4))
+                .listRowInsets(EdgeInsets(top: 6, leading: 1, bottom: 0, trailing: 4))
                 .listRowBackground(Color.clear)
             }
 
@@ -142,10 +148,12 @@ struct JobView: View {
                     }
                     .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
                     .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
                 }
 
                 Section {
                     viewAllLink
+                        .listRowBackground(TintedRow(colour: job.tint))
                     NavigationLink {
                         TimesheetView(job: job, month: Calendar.current.startOfMonth(for: .now))
                     } label: {
@@ -162,6 +170,7 @@ struct JobView: View {
                                 .foregroundStyle(job.tint)
                         }
                     }
+                    .listRowBackground(TintedRow(colour: job.tint))
                 }
 
                 plannedSection
@@ -238,6 +247,7 @@ struct JobView: View {
                     } onEdit: {
                         editorTarget = .edit(shift, job)
                     }
+                    .listRowBackground(TintedRow(colour: job.tint))
                     .swipeActions(edge: .trailing) {
                         Button {
                             pendingDelete = shift
@@ -267,6 +277,7 @@ struct JobView: View {
             if monthStats.shifts.isEmpty {
                 Text("No shifts logged this month.")
                     .foregroundStyle(.secondary)
+                    .listRowBackground(TintedRow(colour: job.tint))
             } else {
                 // One list with a date badge on each row reads quicker than a
                 // header per day.
@@ -277,6 +288,7 @@ struct JobView: View {
                         ShiftRow(shift: shift, job: job)
                     }
                     .buttonStyle(.plain)
+                    .listRowBackground(TintedRow(colour: job.tint))
                     .swipeActions(edge: .trailing) {
                         Button {
                             pendingDelete = shift
@@ -611,8 +623,7 @@ struct WeekStrip: View {
             .tabViewStyle(.page(indexDisplayMode: .never))
             .frame(height: showsMonth ? 320 : 68)
         }
-        .padding(14)
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+        .washedCard(job.tint, strength: 0.09, padding: 14)
     }
 
     /// Leading blanks so the 1st lands under the right weekday.
@@ -749,9 +760,10 @@ struct RepeatCard: View {
     var body: some View {
         if let today = todayShift {
             loggedToday(today)
-                .padding(14)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+                // Across rather than down, and lighter: the hero card directly
+                // above already washes this colour from the top, and two of
+                // those in a row read as one tall card.
+                .washedCard(job.tint, strength: 0.14, padding: 14, from: .leading, to: .trailing)
         } else if let last = lastShift {
             Button(action: onRepeat) {
                 // Plain text, not a Label: the button hides the icon but keeps
