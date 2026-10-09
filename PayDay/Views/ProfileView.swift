@@ -127,7 +127,7 @@ struct ProfileView: View {
 
                 Section {
                     ForEach(jobs) { job in
-                        JobProjection(job: job, shifts: shifts(of: job), accent: profileColor.color)
+                        JobProjection(job: job, shifts: shifts(of: job))
                             .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
@@ -1137,15 +1137,11 @@ struct SettingsView: View {
 struct JobProjection: View {
     let job: Job
     let shifts: [Shift]
-    /// Your colour, for the control on the card. The card itself is the job's.
-    var accent: Color = Palette.brand
-
     @AppStorage private var basisRaw: String
 
-    init(job: Job, shifts: [Shift], accent: Color = Palette.brand) {
+    init(job: Job, shifts: [Shift]) {
         self.job = job
         self.shifts = shifts
-        self.accent = accent
         let fallback: ProjectionBasis = .pattern
         _basisRaw = AppStorage(wrappedValue: fallback.rawValue, job.projectionBasisKey)
     }
@@ -1160,8 +1156,7 @@ struct JobProjection: View {
     var body: some View {
         ProjectionCard(
             projection: StatsEngine.projection(for: job, allShiftsForJob: shifts, basis: basis.wrappedValue),
-            basis: basis,
-            accent: accent
+            basis: basis
         )
     }
 }

@@ -15,6 +15,10 @@ struct ContentView: View {
     /// below redraws in the new one.
     @AppStorage(AppSettings.currencyKey) private var currencyCode = AppSettings.deviceDefault
 
+    /// One navigation stack per job, kept here so switching tabs and coming
+    /// back lands you where you were rather than at the top.
+    @State private var paths: [String: [JobRoute]] = [:]
+
     private static let profileTag = "profile"
 
     /// The stored tab, or a sensible one when nothing's stored yet or that
@@ -41,6 +45,14 @@ struct ContentView: View {
             ?? (JobColor(rawValue: profileColorRaw) ?? UserProfile.defaultColor).color
     }
 
+    private func path(for job: Job) -> Binding<[JobRoute]> {
+        let key = job.id.uuidString
+        return Binding(
+            get: { paths[key] ?? [] },
+            set: { paths[key] = $0 }
+        )
+    }
+
     var body: some View {
         Group {
             // With no jobs there is nothing for the tabs to show, and Profile
@@ -64,7 +76,7 @@ struct ContentView: View {
     private var tabs: some View {
         TabView(selection: selection) {
             ForEach(jobs) { job in
-                JobView(job: job)
+                JobView(job: job, path: path(for: job))
                     .tag(job.id.uuidString)
                     .tabItem { Label(job.displayName, systemImage: job.symbol) }
             }

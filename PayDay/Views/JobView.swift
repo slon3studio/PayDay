@@ -4,8 +4,18 @@ import SwiftData
 /// One tab per job: repeat or log a shift, and this month at a glance. All-time
 /// numbers and the projection live on Profile; the full history behind
 /// "View all".
+/// Where a job tab is: the root, or one of the screens behind it. Held by
+/// ContentView rather than here, because a tab you switch away from is torn
+/// down — and coming back to the root of a screen you were reading is the
+/// kind of thing that makes an app feel like it forgot you.
+enum JobRoute: Hashable {
+    case allShifts
+    case timesheet(Date)
+}
+
 struct JobView: View {
     let job: Job
+    @Binding var path: [JobRoute]
 
     @Environment(\.modelContext) private var context
     @Query(sort: \Shift.checkIn, order: .reverse) private var allShifts: [Shift]
@@ -36,8 +46,16 @@ struct JobView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             content
+                .navigationDestination(for: JobRoute.self) { route in
+                    switch route {
+                    case .allShifts:
+                        AllShiftsView(job: job)
+                    case .timesheet(let month):
+                        TimesheetView(job: job, month: month)
+                    }
+                }
                 // Still set, so View all's back button is named — but shown
                 // in the list instead (see `content`).
                 .navigationTitle(job.displayName)
@@ -154,9 +172,7 @@ struct JobView: View {
                 Section {
                     viewAllLink
                         .listRowBackground(TintedRow(colour: job.tint))
-                    NavigationLink {
-                        TimesheetView(job: job, month: Calendar.current.startOfMonth(for: .now))
-                    } label: {
+                    NavigationLink(value: JobRoute.timesheet(Calendar.current.startOfMonth(for: .now))) {
                         Label {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Timesheet")
@@ -213,9 +229,7 @@ struct JobView: View {
     /// Way into the full month-by-month history, sitting just above the
     /// recently logged shifts.
     private var viewAllLink: some View {
-        NavigationLink {
-            AllShiftsView(job: job)
-        } label: {
+        NavigationLink(value: JobRoute.allShifts) {
             Label {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("View all")
@@ -803,7 +817,8 @@ struct RepeatCard: View {
 }
 
 #Preview {
-    JobView(job: Job(name: "M🐱ček", color: .orange, symbol: "fork.knife", hourlyRate: 9, tracksTips: true))
+    JobView(job: Job(name: "M🐱ček", color: .orange, symbol: "fork.knife", hourlyRate: 9, tracksTips: true),
+            path: .constant([]))
         .modelContainer(PreviewData.container)
 }
 

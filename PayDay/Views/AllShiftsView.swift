@@ -103,57 +103,22 @@ struct AllShiftsView: View {
 
     // MARK: - List
 
+    /// A card per month rather than a grouped list of disclosure rows. The
+    /// stock ones gave every month the same chevron and the same grey, so the
+    /// month you are actually reading looked like the eleven you aren't.
     private var list: some View {
-        List {
-            ForEach(months) { month in
-                Section {
-                    DisclosureGroup(isExpanded: expansion(for: month)) {
-                        MonthHeatmap(month: month, job: job, openDays: expandedDays) { day in
-                            selectDay(day, in: month)
-                        }
-
-                        if !month.days.isEmpty {
-                            monthFacts(month)
-
-                            NavigationLink {
-                                TimesheetView(job: job, month: month.date)
-                            } label: {
-                                Label("Timesheet", systemImage: "tablecells")
-                                    .foregroundStyle(job.tint)
-                            }
-                        }
-
-                        ForEach(month.days) { day in
-                            DisclosureGroup(isExpanded: expansion(for: day)) {
-                                ForEach(day.shifts) { shift in
-                                    Button {
-                                        editorTarget = .edit(shift, job)
-                                    } label: {
-                                        ShiftDetailRow(shift: shift, job: job)
-                                    }
-                                    .buttonStyle(.plain)
-                                    .swipeActions(edge: .trailing) {
-                                        Button {
-                                            pendingDelete = shift
-                                        } label: {
-                                            Label("Delete", systemImage: "trash")
-                                        }
-                                        .tint(.red)
-                                    }
-                                }
-                            } label: {
-                                dayLabel(day)
-                            }
-                        }
-                    } label: {
-                        monthLabel(month)
-                    }
-                    .listRowBackground(TintedRow(colour: job.tint))
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                ForEach(months) { month in
+                    monthCard(month)
                 }
             }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 32)
         }
-        .listStyle(.insetGrouped)
-        .listSectionSpacing(.compact)
+        .background(Color(.systemGroupedBackground))
+        .scrollDismissesKeyboard(.interactively)
     }
 
     /// One shift on the day → edit it; none → log one there. A day with
@@ -167,14 +132,55 @@ struct AllShiftsView: View {
         }
     }
 
+    private func monthCard(_ month: MonthTotal) -> some View {
+        let isOpen = expandedMonths.contains(month.date)
+
+        return VStack(spacing: 0) {
+            Button {
+                withAnimation(.snappy) {
+                    if isOpen { expandedMonths.remove(month.date) } else { expandedMonths.insert(month.date) }
+                }
+            } label: {
+                monthHeader(month, isOpen: isOpen)
+            }
+            .buttonStyle(.plain)
+
+            if isOpen {
+                VStack(spacing: 14) {
+                    Divider()
+
+                    MonthHeatmap(month: month, job: job, openDays: expandedDays) { day in
+                        selectDay(day, in: month)
+                    }
+
+                    if !month.days.isEmpty {
+                        factsRow(month)
+                        paymentControl(month)
+                        daysList(month)
+                    } else {
+                        Text("Nothing logged yet. Tap a day to add a shift.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
+            }
+        }
+        .washedSurface(job.tint)
+    }
+
     // MARK: - Rows
 
-    private func monthLabel(_ month: MonthTotal) -> some View {
-        HStack(spacing: 10) {
+    private func monthHeader(_ month: MonthTotal, isOpen: Bool) -> some View {
+        HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(Fmt.monthTitle(month.date))
-                    .font(.headline)
-                Text("\(Fmt.count(month.dayCount, "day")) · \(Fmt.count(month.shiftCount, "shift"))")
+                    .font(.system(.headline, design: .rounded).weight(.bold))
+                Text(month.days.isEmpty
+                     ? "Nothing logged"
+                     : "\(Fmt.count(month.dayCount, "day")) · \(Fmt.count(month.shiftCount, "shift"))")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -182,92 +188,212 @@ struct AllShiftsView: View {
             Spacer(minLength: 8)
 
             VStack(alignment: .trailing, spacing: 2) {
-                Text(Fmt.hours(month.hours))
-                    .font(.subheadline.weight(.semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(job.tint)
                 Text(Fmt.money(month.pay))
+                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(Palette.money)
+                Text(Fmt.hours(month.hours))
                     .font(.caption)
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
             }
+
+            Image(systemName: "chevron.down")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(job.tint)
+                .rotationEffect(.degrees(isOpen ? 0 : -90))
+                .frame(width: 20)
         }
+        .padding(16)
         .contentShape(Rectangle())
     }
 
-    /// The month's breakdown, shown once it's open. Hours and the total are
-    /// already on the month's own row.
-    private func monthFacts(_ month: MonthTotal) -> some View {
-        VStack(spacing: 8) {
+    /// The month's breakdown as three columns, not three rows of a settings
+    /// table. Hours and the total are already on the header.
+    private func factsRow(_ month: MonthTotal) -> some View {
+        HStack(spacing: 0) {
             if job.tracksTips {
-                StatRow(label: "Base pay", value: Fmt.money(month.basePay))
-                StatRow(label: "Tips", value: Fmt.money(month.tips))
+                fact("Base pay", Fmt.money(month.basePay))
+                fact("Tips", Fmt.money(month.tips))
             }
-            StatRow(label: "Avg per day", value: Fmt.hours(month.averageHoursPerDay))
-
-            Divider()
-            paidRow(month)
+            fact("Avg per day", Fmt.hours(month.averageHoursPerDay))
+            if !job.tracksTips {
+                fact("Shifts", "\(month.shiftCount)")
+            }
         }
-        .padding(.vertical, 4)
     }
 
-    /// What actually arrived for this month, against what it should have been.
+    private func fact(_ label: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Whether this month has been paid, as one control.
+    ///
+    /// It used to be a line of text in the middle of a stat table, which is
+    /// how you end up tapping it by accident and never on purpose. Unpaid it
+    /// is a filled button carrying the amount it will propose; paid it is a
+    /// status strip you can tap to correct.
     @ViewBuilder
-    private func paidRow(_ month: MonthTotal) -> some View {
+    private func paymentControl(_ month: MonthTotal) -> some View {
         if let payment = payment(for: month) {
             let delta = payment.difference(from: month.pay)
             let matches = abs(delta) < 0.01
+            let tint = matches ? Palette.money : (delta < 0 ? Palette.attention : Palette.money)
 
             Button {
                 payTarget = month
             } label: {
-                VStack(spacing: 6) {
-                    StatRow(label: "Paid \(Fmt.dayInMonth(payment.paidOn))",
-                            value: Fmt.money(payment.amount),
-                            emphasized: true,
-                            tint: matches ? Palette.money : (delta < 0 ? Palette.attention : Palette.money))
-                    HStack(spacing: 4) {
-                        Image(systemName: matches ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
-                            .foregroundStyle(matches ? Palette.money : Palette.attention)
-                        Text(matches
-                             ? "Matches what this month should have paid."
-                             : "\(delta < 0 ? "Short" : "Over") by \(Fmt.money(abs(delta))) against \(Fmt.money(month.pay)).")
-                        Spacer(minLength: 0)
-                    }
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 10) {
+                    Image(systemName: matches ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
+                        .font(.title3)
+                        .foregroundStyle(tint)
 
-                    if !payment.note.isEmpty {
-                        HStack {
-                            Text(payment.note)
-                                .font(.caption2)
-                                .foregroundStyle(.tertiary)
-                            Spacer(minLength: 0)
-                        }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Paid \(Fmt.money(payment.amount))")
+                            .font(.subheadline.weight(.semibold))
+                            .monospacedDigit()
+                        Text(matches
+                             ? "On \(Fmt.dayInMonth(payment.paidOn)) · matches this month"
+                             : "\(delta < 0 ? "Short" : "Over") by \(Fmt.money(abs(delta))) against \(Fmt.money(month.pay))")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
+
+                    Spacer(minLength: 8)
+
+                    Image(systemName: "pencil")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.tertiary)
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(tint.opacity(0.12),
+                            in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+
+            if !payment.note.isEmpty {
+                Text(payment.note)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
         } else {
             Button {
                 payTarget = month
             } label: {
-                Label("Mark as paid", systemImage: "checkmark.circle")
-                    .font(.subheadline.weight(.medium))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.circle.fill")
+                    Text("Mark as paid")
+                    Spacer(minLength: 8)
+                    Text(Fmt.money(month.pay))
+                        .monospacedDigit()
+                        .opacity(0.9)
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+                .frame(maxWidth: .infinity)
+                .background(
+                    LinearGradient(colors: [job.tint, job.gradientEnd],
+                                   startPoint: .leading, endPoint: .trailing),
+                    in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                )
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+        }
+
+        NavigationLink(value: JobRoute.timesheet(month.date)) {
+            HStack(spacing: 8) {
+                Image(systemName: "tablecells")
+                Text("Timesheet")
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.tertiary)
+            }
+            .font(.subheadline.weight(.medium))
             .foregroundStyle(job.tint)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(job.tint.opacity(0.10),
+                        in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Every day worked that month. One shift on a day opens straight into the
+    /// editor; several open here so you can pick.
+    private func daysList(_ month: MonthTotal) -> some View {
+        VStack(spacing: 0) {
+            Divider()
+            ForEach(month.days) { day in
+                let isOpen = expandedDays.contains(day.date)
+
+                Button {
+                    if day.shifts.count == 1 {
+                        editorTarget = .edit(day.shifts[0], job)
+                    } else {
+                        withAnimation(.snappy) {
+                            if isOpen { expandedDays.remove(day.date) } else { expandedDays.insert(day.date) }
+                        }
+                    }
+                } label: {
+                    dayLabel(day, isOpen: isOpen)
+                }
+                .buttonStyle(.plain)
+
+                if isOpen {
+                    ForEach(day.shifts) { shift in
+                        Button {
+                            editorTarget = .edit(shift, job)
+                        } label: {
+                            ShiftDetailRow(shift: shift, job: job)
+                                .padding(.leading, 12)
+                                .padding(.vertical, 8)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .contextMenu {
+                            Button("Delete", systemImage: "trash", role: .destructive) {
+                                pendingDelete = shift
+                            }
+                        }
+                    }
+                }
+
+                if day.id != month.days.last?.id { Divider() }
+            }
         }
     }
 
-    private func dayLabel(_ day: DayTotal) -> some View {
-        HStack(spacing: 10) {
+    private func dayLabel(_ day: DayTotal, isOpen: Bool) -> some View {
+        HStack(spacing: 12) {
+            DateBadge(date: day.date, tint: job.tint)
+
+            // The badge already says which day it is, so the line beside it
+            // says what happened on it.
             VStack(alignment: .leading, spacing: 2) {
-                Text(Fmt.dayInMonth(day.date))
-                    .font(.body.weight(.medium))
+                Text(headline(for: day))
+                    .font(.subheadline.weight(.medium))
+                    .monospacedDigit()
                 Text(caption(for: day))
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -276,18 +402,27 @@ struct AllShiftsView: View {
             Spacer(minLength: 8)
 
             Text(Fmt.hours(day.hours))
-                .font(.callout.weight(.semibold))
+                .font(.subheadline.weight(.semibold))
                 .monospacedDigit()
                 .foregroundStyle(job.tint)
+
+            Image(systemName: day.shifts.count == 1 ? "chevron.right" : "chevron.down")
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(.tertiary)
+                .rotationEffect(.degrees(day.shifts.count == 1 || isOpen ? 0 : -90))
         }
+        .padding(.vertical, 10)
         .contentShape(Rectangle())
+    }
+
+    private func headline(for day: DayTotal) -> String {
+        guard let first = day.shifts.first else { return Fmt.dayHeader(day.date) }
+        if day.shifts.count > 1 { return Fmt.count(day.shifts.count, "shift") }
+        return "\(Fmt.time(first.checkIn)) → \(Fmt.time(first.checkOut))"
     }
 
     private func caption(for day: DayTotal) -> String {
         var parts = [Fmt.money(day.pay)]
-        if day.shifts.count > 1 {
-            parts.append(Fmt.count(day.shifts.count, "shift"))
-        }
         if job.tracksTips && day.tips > 0 {
             parts.append("\(Fmt.money(day.tips)) tips")
         }

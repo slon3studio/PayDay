@@ -6,9 +6,6 @@ import SwiftUI
 struct ProjectionCard: View {
     let projection: MonthProjection
     @Binding var basis: ProjectionBasis
-    /// Profile's colour. These cards sit on the Profile tab, so the control
-    /// on them answers to you, not to the job they describe.
-    var accent: Color = Palette.brand
 
     private var job: Job { projection.job }
     private var goalTarget: Double { job.goalTarget }
@@ -91,7 +88,7 @@ struct ProjectionCard: View {
                 ChipPicker(
                     options: ProjectionBasis.allCases.map { .init($0, $0.rawValue) },
                     selection: $basis,
-                    tint: accent
+                    tint: job.tint
                 )
 
                 Text(basis.explanation)
