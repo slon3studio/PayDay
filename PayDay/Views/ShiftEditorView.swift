@@ -141,6 +141,12 @@ struct ShiftEditorView: View {
         NavigationStack {
             Form {
                 Section {
+                    summary
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                }
+
+                Section {
                     dateRow
                     DatePicker("Check in", selection: $checkInTime, displayedComponents: .hourAndMinute)
                     DatePicker("Check out", selection: $checkOutTime, displayedComponents: .hourAndMinute)
@@ -183,20 +189,14 @@ struct ShiftEditorView: View {
                         .lineLimit(1...3)
                 }
 
-                Section {
-                    if breakMinutes > 0 {
+                if breakMinutes > 0 {
+                    Section {
                         StatRow(label: "On the clock", value: Fmt.hours(span))
-                        StatRow(label: "Break", value: "−\(breakMinutes) min")
+                        StatRow(label: "Unpaid break", value: "−\(breakMinutes) min")
+                        StatRow(label: "Counts as", value: Fmt.hours(duration), emphasized: true, tint: job.tint)
+                    } header: {
+                        Text("Hours")
                     }
-                    StatRow(label: "Hours", value: Fmt.hours(duration), emphasized: true, tint: job.tint)
-                    StatRow(label: "Base pay", value: Fmt.money(duration * rate))
-                    if job.tracksTips {
-                        StatRow(label: "Total incl. tips", value: Fmt.money(duration * rate + tipsValue), emphasized: true, tint: Palette.money)
-                    }
-                } header: {
-                    Text("This shift")
-                } footer: {
-                    Text("\(job.displayName) pays \(Fmt.money(rate)) per hour.")
                 }
 
                 if let shift = target.existing {
@@ -232,6 +232,77 @@ struct ShiftEditorView: View {
             }
         }
         .tint(job.tint)
+    }
+
+    // MARK: - Summary
+
+    /// The shift as it currently stands, in the job's own colours — the same
+    /// card the job's tab opens with, scaled down to one shift.
+    private var summary: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text(Fmt.dayHeader(Calendar.current.startOfDay(for: resolvedCheckIn)).uppercased())
+                    .font(.caption.weight(.semibold))
+                    .tracking(0.6)
+                Spacer()
+                Image(systemName: job.symbol)
+            }
+            .opacity(0.85)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(Fmt.money(duration * rate + (job.tracksTips ? tipsValue : 0)))
+                    .font(.system(size: 40, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(1)
+                Text("\(Fmt.time(resolvedCheckIn)) → \(Fmt.time(resolvedCheckOut))\(isOvernight ? " +1" : "") · \(Fmt.hours(duration))")
+                    .font(.subheadline)
+                    .opacity(0.85)
+            }
+
+            HStack(spacing: 0) {
+                heroStat("Hours", Fmt.hours(duration))
+                heroDivider
+                heroStat("Base pay", Fmt.money(duration * rate))
+                heroDivider
+                if job.tracksTips {
+                    heroStat("Tips", Fmt.money(tipsValue))
+                } else {
+                    heroStat("Rate", "\(Fmt.money(rate))/h")
+                }
+            }
+        }
+        .foregroundStyle(.white)
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            LinearGradient(colors: [job.tint, job.gradientEnd],
+                           startPoint: .topLeading, endPoint: .bottomTrailing),
+            in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous)
+        )
+        .animation(.snappy, value: duration)
+    }
+
+    private func heroStat(_ label: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value)
+                .font(.headline)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Text(label)
+                .font(.caption2)
+                .opacity(0.8)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var heroDivider: some View {
+        Rectangle()
+            .fill(.white.opacity(0.3))
+            .frame(width: 1, height: 28)
+            .padding(.trailing, 12)
     }
 
     // MARK: - Saving

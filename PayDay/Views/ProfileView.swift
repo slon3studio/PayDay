@@ -41,6 +41,15 @@ struct ProfileView: View {
         ShiftStats(job: job, shifts: shifts(of: job))
     }
 
+    private var monthShifts: [Shift] { StatsEngine.shifts(allShifts, in: .month) }
+    private var monthEarnings: Double { monthShifts.reduce(0) { $0 + $1.totalPay } }
+    private var monthHours: Double { monthShifts.reduce(0) { $0 + $1.hours } }
+    private var monthDays: Int { Set(monthShifts.map(\.day)).count }
+
+    private func monthEarnings(of job: Job) -> Double {
+        monthShifts.filter { $0.job?.id == job.id }.reduce(0) { $0 + $1.totalPay }
+    }
+
     private var totalHours: Double { allShifts.reduce(0) { $0 + $1.hours } }
     private var totalEarnings: Double { allShifts.reduce(0) { $0 + $1.totalPay } }
     private var totalTips: Double { allShifts.reduce(0) { $0 + $1.tipsAmount } }
@@ -78,7 +87,7 @@ struct ProfileView: View {
     private var content: some View {
         List {
             Section {
-                profileCard
+                profileHeader
                     .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
                     .listRowBackground(Color.clear)
             }
@@ -141,43 +150,96 @@ struct ProfileView: View {
 
     // MARK: - You
 
-    private var profileCard: some View {
-        Button {
-            editingProfile = true
-        } label: {
-            HStack(spacing: 14) {
-                ProfileAvatar(emoji: emoji, name: name, color: profileColor, size: 60)
+    /// Identity and this month in one card, in the app's own green — the
+    /// counterpart to the gradient card each job tab opens with. Profile used
+    /// to be a white row with a name in it, which looked like a settings
+    /// screen wearing the app's clothes.
+    private var profileHeader: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Button {
+                editingProfile = true
+            } label: {
+                HStack(spacing: 12) {
+                    ProfileAvatar(emoji: emoji, name: name, color: profileColor, size: 46, onColour: true)
+                        .overlay(Circle().strokeBorder(.white.opacity(0.85), lineWidth: 2))
 
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(name.isEmpty ? "Add your name" : name)
-                        .font(.title3.weight(.semibold))
-                        .foregroundStyle(name.isEmpty ? .secondary : .primary)
-                    if !role.isEmpty {
-                        Text(role)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    // "Tracking since today" is a statistic about nothing.
-                    // It earns its place once there's a week behind it.
-                    if hasHistory {
-                        Text("Tracking since \(trackingSince.formatted(.dateTime.day().month(.wide).year()))")
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(name.isEmpty ? "Add your name" : name)
+                            .font(.headline)
+                        Text(subtitle)
                             .font(.caption)
-                            .foregroundStyle(.tertiary)
+                            .opacity(0.85)
                     }
+
+                    Spacer(minLength: 0)
+
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .opacity(0.7)
                 }
-
-                Spacer(minLength: 0)
-
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tertiary)
+                .contentShape(Rectangle())
             }
-            .padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(Fmt.money(monthEarnings))
+                    .font(.system(size: 42, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .contentTransition(.numericText())
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(1)
+                Text("earned in \(Fmt.monthTitle(.now))\(jobs.count > 1 ? ", across every job" : "")")
+                    .font(.subheadline)
+                    .opacity(0.85)
+            }
+
+            HStack(spacing: 0) {
+                headerStat("Hours", Fmt.hours(monthHours))
+                headerDivider
+                headerStat("Days", "\(monthDays)")
+                headerDivider
+                headerStat(jobs.count == 1 ? "Job" : "Jobs", "\(jobs.count)")
+            }
         }
-        .buttonStyle(.plain)
+        .foregroundStyle(.white)
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            LinearGradient(colors: [profileColor.color, profileColor.gradientEnd],
+                           startPoint: .topLeading, endPoint: .bottomTrailing),
+            in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous)
+        )
+    }
+
+    /// What goes under the name: the role if there is one, otherwise how long
+    /// you've been at it — and nothing at all in the first week.
+    private var subtitle: String {
+        if !role.isEmpty { return role }
+        if hasHistory {
+            return "Tracking since \(trackingSince.formatted(.dateTime.month(.abbreviated).year()))"
+        }
+        return jobs.isEmpty ? "No jobs yet" : Fmt.count(jobs.count, "job")
+    }
+
+    private func headerStat(_ label: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value)
+                .font(.headline)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Text(label)
+                .font(.caption2)
+                .opacity(0.8)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var headerDivider: some View {
+        Rectangle()
+            .fill(.white.opacity(0.3))
+            .frame(width: 1, height: 28)
+            .padding(.trailing, 12)
     }
 
     /// Your first shift, or the first time the app was opened — whichever was
@@ -200,7 +262,7 @@ struct ProfileView: View {
                     // Arrows as well as the drag handle: a drag is easy to
                     // miss on a small list, a tap isn't.
                     HStack(spacing: 12) {
-                        JobRow(job: job, shiftCount: shifts(of: job).count, showsChevron: false)
+                        JobRow(job: job, shiftCount: shifts(of: job).count, monthEarnings: monthEarnings(of: job), showsChevron: false)
                         Button {
                             withAnimation { moveJobs(from: IndexSet(integer: index), to: index - 1) }
                         } label: {
@@ -222,7 +284,7 @@ struct ProfileView: View {
                     Button {
                         jobEditor = .edit(job)
                     } label: {
-                        JobRow(job: job, shiftCount: shifts(of: job).count)
+                        JobRow(job: job, shiftCount: shifts(of: job).count, monthEarnings: monthEarnings(of: job))
                     }
                     .buttonStyle(.plain)
                 }
@@ -371,6 +433,7 @@ struct ProfileView: View {
 private struct JobRow: View {
     let job: Job
     let shiftCount: Int
+    let monthEarnings: Double
     var showsChevron = true
 
     var body: some View {
@@ -378,8 +441,12 @@ private struct JobRow: View {
             Image(systemName: job.symbol)
                 .font(.body.weight(.semibold))
                 .foregroundStyle(.white)
-                .frame(width: 36, height: 36)
-                .background(job.tint, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .frame(width: 40, height: 40)
+                .background(
+                    LinearGradient(colors: [job.tint, job.gradientEnd],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing),
+                    in: RoundedRectangle(cornerRadius: Palette.tileRadius, style: .continuous)
+                )
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(job.displayName)
@@ -390,6 +457,18 @@ private struct JobRow: View {
             }
 
             Spacer(minLength: 8)
+
+            if monthEarnings > 0 {
+                VStack(alignment: .trailing, spacing: 1) {
+                    Text(Fmt.money(monthEarnings))
+                        .font(.subheadline.weight(.semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(Palette.money)
+                    Text("this month")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
 
             if showsChevron {
                 Image(systemName: "chevron.right")
@@ -439,6 +518,8 @@ struct ProfileAvatar: View {
     let name: String
     let color: JobColor
     var size: CGFloat = 60
+    /// Sitting on a coloured card rather than a grey one.
+    var onColour = false
 
     /// Up to two letters from the name. With no name there's nothing to
     /// abbreviate, so the avatar invites you to set one instead.
@@ -461,10 +542,14 @@ struct ProfileAvatar: View {
         }
             .foregroundStyle(.white)
             .frame(width: size, height: size)
-            .background(
-                LinearGradient(colors: [color.color, color.gradientEnd], startPoint: .topLeading, endPoint: .bottomTrailing),
-                in: Circle()
-            )
+            .background {
+                if onColour {
+                    Circle().fill(.white.opacity(0.22))
+                } else {
+                    Circle().fill(LinearGradient(colors: [color.color, color.gradientEnd],
+                                                 startPoint: .topLeading, endPoint: .bottomTrailing))
+                }
+            }
     }
 }
 
