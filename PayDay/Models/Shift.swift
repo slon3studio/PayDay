@@ -19,6 +19,13 @@ final class Shift {
     /// rather than read off the job, so a shift logged before the job
     /// started deducting breaks keeps the hours it was logged with.
     var breakMinutes: Int = 0
+    /// A shift you intend to work but haven't confirmed yet.
+    ///
+    /// Planned shifts never count as earned — the month's figures, the
+    /// timesheet and the payslip check all ignore them. They feed the
+    /// projection instead, which is the one place knowing your rota ahead of
+    /// time actually helps. Confirming one clears this flag.
+    var isPlanned: Bool = false
     /// The job this shift belongs to. Optional so that adding jobs to a store
     /// that predates them is a migration SwiftData can do on its own; the
     /// first launch after the update fills it in.
@@ -35,7 +42,8 @@ final class Shift {
         tips: Double? = nil,
         note: String = "",
         rate: Double? = nil,
-        breakMinutes: Int = 0
+        breakMinutes: Int = 0,
+        isPlanned: Bool = false
     ) {
         self.id = UUID()
         self.job = job
@@ -45,6 +53,7 @@ final class Shift {
         self.note = note
         self.rate = rate ?? job?.hourlyRate
         self.breakMinutes = breakMinutes
+        self.isPlanned = isPlanned
     }
 
     /// Hours actually worked: the span, less any unpaid break. Always
@@ -77,4 +86,19 @@ final class Shift {
 
     /// Everything earned on this shift, tips included.
     var totalPay: Double { basePay + tipsAmount }
+
+    /// A planned shift whose day has come and gone without being confirmed.
+    /// Worth nudging about; still not worth counting.
+    var isOverdue: Bool {
+        isPlanned && checkOut < .now
+    }
+}
+
+extension Array where Element == Shift {
+    /// Shifts actually worked. Anything that totals money, hours or days
+    /// should go through this — a plan is not a payslip.
+    var logged: [Shift] { filter { !$0.isPlanned } }
+
+    /// Shifts still only intended.
+    var planned: [Shift] { filter(\.isPlanned) }
 }

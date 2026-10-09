@@ -22,13 +22,17 @@ struct JobView: View {
     }
 
     private var monthStats: ShiftStats {
-        ShiftStats(job: job, shifts: StatsEngine.shifts(jobShifts, in: .month))
+        ShiftStats(job: job, shifts: StatsEngine.shifts(jobShifts, in: .month).logged)
     }
 
-    private var lastShift: Shift? { jobShifts.first }
+    /// The shift Repeat would copy. A plan isn't a precedent, so only worked
+    /// ones count.
+    private var lastShift: Shift? { jobShifts.logged.first }
 
+    /// Only a confirmed shift counts as "logged today" — a plan for this
+    /// evening is still a plan at nine in the morning.
     private var todayShift: Shift? {
-        jobShifts.first { Calendar.current.isDateInToday($0.checkIn) }
+        jobShifts.logged.first { Calendar.current.isDateInToday($0.checkIn) }
     }
 
     var body: some View {
@@ -153,6 +157,7 @@ struct JobView: View {
                     }
                 }
 
+                plannedSection
                 shiftSection
             }
         }
@@ -210,6 +215,46 @@ struct JobView: View {
         }
     }
 
+    private var plannedShifts: [Shift] {
+        jobShifts.planned
+            .filter { $0.checkIn > Calendar.current.date(byAdding: .day, value: -7, to: .now) ?? .now }
+            .sorted { $0.checkIn < $1.checkIn }
+    }
+
+    @ViewBuilder
+    private var plannedSection: some View {
+        if !plannedShifts.isEmpty {
+            Section {
+                ForEach(plannedShifts) { shift in
+                    PlannedRow(shift: shift, job: job) {
+                        confirm(shift)
+                    } onEdit: {
+                        editorTarget = .edit(shift, job)
+                    }
+                    .swipeActions(edge: .trailing) {
+                        Button {
+                            pendingDelete = shift
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                        .tint(.red)
+                    }
+                }
+            } header: {
+                SectionHeader("Planned")
+            } footer: {
+                Text("Planned shifts count toward the projection, never toward what you've earned. Confirm one once you've worked it.")
+            }
+        }
+    }
+
+    /// Turns a plan into a fact. Nothing else changes — the times stay as
+    /// planned, and you can still open it to correct them.
+    private func confirm(_ shift: Shift) {
+        withAnimation(.snappy) { shift.isPlanned = false }
+        Haptics.success()
+    }
+
     private var shiftSection: some View {
         Section {
             if monthStats.shifts.isEmpty {
@@ -236,7 +281,7 @@ struct JobView: View {
                 }
             }
         } header: {
-            Text("Shifts this month")
+            SectionHeader("Worked this month")
         }
     }
 
@@ -303,6 +348,8 @@ struct ShiftRow: View {
 struct DateBadge: View {
     let date: Date
     let tint: Color
+    /// Dashed rather than filled, for a day that hasn't happened yet.
+    var outlined = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -314,7 +361,14 @@ struct DateBadge: View {
                 .monospacedDigit()
         }
         .frame(width: 44, height: 44)
-        .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(tint.opacity(outlined ? 0.06 : 0.12),
+                    in: RoundedRectangle(cornerRadius: Palette.tileRadius, style: .continuous))
+        .overlay {
+            if outlined {
+                RoundedRectangle(cornerRadius: Palette.tileRadius, style: .continuous)
+                    .strokeBorder(tint, style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+            }
+        }
     }
 }
 
@@ -531,7 +585,8 @@ struct WeekStrip: View {
 
     private func cell(_ day: Date, shifts: [Shift]) -> some View {
         let hours = shifts.reduce(0) { $0 + $1.hours }
-        let worked = !shifts.isEmpty
+        let planned = !shifts.isEmpty && shifts.allSatisfy(\.isPlanned)
+        let worked = !shifts.isEmpty && !planned
         let isToday = calendar.isDateInToday(day)
 
         return Button {
@@ -544,27 +599,37 @@ struct WeekStrip: View {
                 Text(day.formatted(.dateTime.day()))
                     .font(.callout.weight(.semibold))
                     .monospacedDigit()
-                Text(worked ? Self.compactHours(hours) : "+")
+                Text(shifts.isEmpty ? "+" : Self.compactHours(hours))
                     .font(.system(size: 10, weight: .semibold))
-                    .opacity(worked ? 0.9 : 0.4)
+                    .opacity(shifts.isEmpty ? 0.4 : 0.9)
             }
-            .foregroundStyle(worked ? Color.white : .primary)
+            .foregroundStyle(worked ? Color.white : (planned ? job.tint : .primary))
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
             .background(
-                worked ? AnyShapeStyle(job.tint) : AnyShapeStyle(Color(.tertiarySystemFill)),
+                worked ? AnyShapeStyle(job.tint)
+                       : AnyShapeStyle(planned ? job.tint.opacity(0.10) : Color(.tertiarySystemFill)),
                 in: RoundedRectangle(cornerRadius: Palette.tileRadius, style: .continuous)
             )
             .overlay {
-                if isToday {
+                RoundedRectangle(cornerRadius: Palette.tileRadius, style: .continuous)
+                    .strokeBorder(job.tint,
+                                  style: StrokeStyle(lineWidth: planned ? 1.5 : 2,
+                                                     dash: planned ? [4, 3] : []))
+                    .opacity(planned ? 1 : (isToday && !worked ? 1 : 0))
+            }
+            .overlay {
+                if isToday && worked {
                     RoundedRectangle(cornerRadius: Palette.tileRadius, style: .continuous)
-                        .strokeBorder(worked ? Color.primary.opacity(0.35) : job.tint, lineWidth: 2)
+                        .strokeBorder(Color.primary.opacity(0.35), lineWidth: 2)
                 }
             }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(worked ? "\(Fmt.dayInMonth(day)), \(Fmt.hours(hours))" : "\(Fmt.dayInMonth(day)), not worked")
-        .accessibilityHint(worked ? "Edit shift" : "Log a shift")
+        .accessibilityLabel(shifts.isEmpty
+            ? "\(Fmt.dayInMonth(day)), nothing"
+            : "\(Fmt.dayInMonth(day)), \(Fmt.hours(hours))\(planned ? ", planned" : "")")
+        .accessibilityHint(shifts.isEmpty ? "Log a shift" : "Edit shift")
     }
 
     /// "7.5h" — "7h 30m" doesn't fit a seventh of a phone.
@@ -634,4 +699,59 @@ struct RepeatCard: View {
 #Preview {
     JobView(job: Job(name: "M🐱ček", color: .orange, symbol: "fork.knife", hourlyRate: 9, tracksTips: true))
         .modelContainer(PreviewData.container)
+}
+
+
+/// A shift you've entered but not yet worked. Outlined rather than filled, so
+/// it reads as a promise; the tick is how it becomes a fact.
+struct PlannedRow: View {
+    let shift: Shift
+    let job: Job
+    let onConfirm: () -> Void
+    let onEdit: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Button(action: onEdit) {
+                HStack(spacing: 12) {
+                    DateBadge(date: shift.day, tint: job.tint, outlined: true)
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(spacing: 6) {
+                            Text("\(Fmt.time(shift.checkIn)) → \(Fmt.time(shift.checkOut))")
+                                .font(.body.weight(.medium))
+                                .monospacedDigit()
+                            if shift.isOvernight {
+                                Text("+1")
+                                    .font(.caption2.weight(.bold))
+                                    .padding(.horizontal, 5)
+                                    .padding(.vertical, 1)
+                                    .background(Color.secondary.opacity(0.15), in: Capsule())
+                            }
+                        }
+                        Text(shift.isOverdue
+                             ? "Did you work this?"
+                             : "\(Fmt.hours(shift.hours)) · \(Fmt.money(shift.totalPay)) when confirmed")
+                            .font(.caption)
+                            .foregroundStyle(shift.isOverdue ? Palette.attention : .secondary)
+                    }
+
+                    Spacer(minLength: 8)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            Button(action: onConfirm) {
+                Image(systemName: "checkmark")
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 34, height: 34)
+                    .background(job.tint, in: Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Confirm this shift")
+        }
+        .padding(.vertical, 2)
+    }
 }

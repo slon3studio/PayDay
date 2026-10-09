@@ -63,19 +63,22 @@ struct ProjectionCard: View {
 
                 Divider()
 
+                // Split three ways on purpose. Worked is a fact, planned is
+                // a rota you entered, estimated is the app guessing — and
+                // adding them into one number would hide which is which.
                 VStack(spacing: 8) {
-                    // The "so far" figures are on the job's tab; this card is
-                    // only about where the month is heading.
-                    if job.tracksTips {
-                        StatRow(label: "Projected tips", value: Fmt.money(projection.projectedTips))
+                    part("Worked", projection.payToDate, Fmt.hours(projection.hoursSoFar), Palette.money)
+                    if projection.hasPlan {
+                        part("Planned", projection.plannedPay, Fmt.hours(projection.plannedHours), job.tint)
                     }
-                    StatRow(
-                        label: "Days left to work",
-                        value: projection.remainingDays.rounded() == projection.remainingDays
-                            ? "\(Int(projection.remainingDays))"
-                            : String(format: "%.1f", projection.remainingDays)
-                    )
-                    StatRow(label: "At avg/day", value: Fmt.hours(projection.averageHoursPerDay))
+                    part("Estimated", projection.estimatedPay,
+                         estimatedDaysText, .secondary)
+                }
+
+                if projection.hasPlan {
+                    Text("Planned shifts don't count as earned until you confirm them.")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
                 }
 
                 Divider()
@@ -95,6 +98,32 @@ struct ProjectionCard: View {
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+    }
+
+    /// One line of the split: what it comes to, and what it rests on.
+    private func part(_ label: String, _ amount: Double, _ detail: String, _ tint: Color) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Circle()
+                .fill(tint)
+                .frame(width: 7, height: 7)
+                .offset(y: -2)
+            Text(label)
+                .font(.subheadline)
+            Text(detail)
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+            Spacer(minLength: 8)
+            Text(Fmt.money(amount))
+                .font(.subheadline.weight(.semibold))
+                .monospacedDigit()
+                .foregroundStyle(tint == .secondary ? Color.secondary : tint)
+        }
+    }
+
+    private var estimatedDaysText: String {
+        let days = projection.estimatedDays
+        let count = days.rounded() == days ? "\(Int(days))" : String(format: "%.1f", days)
+        return "\(count) day\(days == 1 ? "" : "s") at \(Fmt.hours(projection.averageHoursPerDay))"
     }
 
     // MARK: - Goal

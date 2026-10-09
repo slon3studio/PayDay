@@ -51,13 +51,20 @@ struct MonthTotal: Identifiable {
 
     var id: Date { date }
 
-    var hours: Double { days.reduce(0) { $0 + $1.hours } }
-    var tips: Double { days.reduce(0) { $0 + $1.tips } }
-    var pay: Double { days.reduce(0) { $0 + $1.pay } }
+    /// Everything here is about shifts actually worked. Planned ones still
+    /// appear in `days`, so the calendar can draw them, but they never reach
+    /// a total.
+    private var worked: [Shift] { days.flatMap(\.shifts).logged }
+
+    var hours: Double { worked.reduce(0) { $0 + $1.hours } }
+    var tips: Double { worked.reduce(0) { $0 + $1.tipsAmount } }
+    var pay: Double { worked.reduce(0) { $0 + $1.totalPay } }
     var basePay: Double { pay - tips }
 
-    var dayCount: Int { days.count }
-    var shiftCount: Int { days.reduce(0) { $0 + $1.shifts.count } }
+    var plannedHours: Double { days.flatMap(\.shifts).planned.reduce(0) { $0 + $1.hours } }
+
+    var dayCount: Int { Set(worked.map(\.day)).count }
+    var shiftCount: Int { worked.count }
 
     var averageHoursPerDay: Double {
         dayCount == 0 ? 0 : hours / Double(dayCount)
@@ -109,6 +116,12 @@ struct ShiftStats {
 
 /// Projected pay for the current month: what's already logged, plus the
 /// remaining days of the month filled in at your average daily hours.
+/// What the month is heading for, in three parts you can trust differently.
+///
+/// Worked is a fact. Planned is a rota you've entered, so it's nearly a fact.
+/// Estimated is the app guessing from your habits, and is the only part worth
+/// doubting — which is why the card shows them apart instead of adding them up
+/// into one confident-looking number.
 struct MonthProjection {
     let job: Job
     let basis: ProjectionBasis
@@ -117,23 +130,35 @@ struct MonthProjection {
     /// Already-logged pay, at whatever rate each shift was logged at.
     var basePaySoFar: Double
     var tipsSoFar: Double
+    /// Shifts entered for days still to come, not yet confirmed.
+    var plannedHours: Double
+    var plannedBasePay: Double
+    var plannedTips: Double
     var averageHoursPerDay: Double
     var averageTipsPerDay: Double
     var daysWorked: Int
     var remainingDays: Double
 
     var payToDate: Double { basePaySoFar + tipsSoFar }
+    var plannedPay: Double { plannedBasePay + plannedTips }
 
-    var projectedHours: Double { hoursSoFar + averageHoursPerDay * remainingDays }
-    var projectedTips: Double { tipsSoFar + averageTipsPerDay * remainingDays }
-    /// The days still to come are paid at today's rate.
-    var projectedBasePay: Double {
-        basePaySoFar + averageHoursPerDay * remainingDays * job.hourlyRate
-    }
+    /// Days the estimate still covers: whatever's left after the ones you've
+    /// worked and the ones you've already planned.
+    var estimatedDays: Double { max(0, remainingDays) }
+    var estimatedHours: Double { averageHoursPerDay * estimatedDays }
+    var estimatedTips: Double { averageTipsPerDay * estimatedDays }
+    var estimatedBasePay: Double { estimatedHours * job.hourlyRate }
+    var estimatedPay: Double { estimatedBasePay + estimatedTips }
+
+    var projectedHours: Double { hoursSoFar + plannedHours + estimatedHours }
+    var projectedTips: Double { tipsSoFar + plannedTips + estimatedTips }
+    var projectedBasePay: Double { basePaySoFar + plannedBasePay + estimatedBasePay }
     var projectedTotal: Double { projectedBasePay + projectedTips }
 
-    /// `true` when there is nothing to extrapolate from yet.
-    var isEmpty: Bool { daysWorked == 0 }
+    var hasPlan: Bool { plannedHours > 0 }
+
+    /// `true` when there is nothing to extrapolate from and nothing planned.
+    var isEmpty: Bool { daysWorked == 0 && !hasPlan }
 }
 
 enum StatsEngine {
@@ -182,19 +207,27 @@ enum StatsEngine {
         now: Date = .now
     ) -> MonthProjection {
         let monthShifts = shifts(allShiftsForJob, in: .month, now: now)
-        let monthStats = ShiftStats(job: job, shifts: monthShifts)
-        let allTimeStats = ShiftStats(job: job, shifts: allShiftsForJob)
+        let worked = monthShifts.logged
+        let plan = monthShifts.planned
+
+        let monthStats = ShiftStats(job: job, shifts: worked)
+        let planStats = ShiftStats(job: job, shifts: plan)
+        // The habit the estimate extrapolates from is built out of worked
+        // shifts only. A rota you typed in says what you will do, not what
+        // you usually do.
+        let allTimeStats = ShiftStats(job: job, shifts: allShiftsForJob.logged)
 
         // Prefer this month's rhythm; fall back to all-time when the month is young.
         let avgHours = monthStats.dayCount >= 2 ? monthStats.averageHoursPerDay : allTimeStats.averageHoursPerDay
         let avgTips = monthStats.dayCount >= 2 ? monthStats.averageTipsPerDay : allTimeStats.averageTipsPerDay
 
-        let logged = Set(monthShifts.map(\.day))
+        // A day that's worked or already planned needs no estimate.
+        let spokenFor = Set(monthShifts.map(\.day))
         let remaining = remainingDays(
             for: job,
             basis: basis,
-            loggedDays: logged,
-            allShiftsForJob: allShiftsForJob,
+            loggedDays: spokenFor,
+            allShiftsForJob: allShiftsForJob.logged,
             now: now
         )
 
@@ -204,6 +237,9 @@ enum StatsEngine {
             hoursSoFar: monthStats.totalHours,
             basePaySoFar: monthStats.basePay,
             tipsSoFar: monthStats.totalTips,
+            plannedHours: planStats.totalHours,
+            plannedBasePay: planStats.basePay,
+            plannedTips: planStats.totalTips,
             averageHoursPerDay: avgHours,
             averageTipsPerDay: avgTips,
             daysWorked: monthStats.dayCount,

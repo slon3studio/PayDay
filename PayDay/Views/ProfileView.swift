@@ -36,10 +36,11 @@ struct ProfileView: View {
     }
 
     private func stats(_ job: Job) -> ShiftStats {
-        ShiftStats(job: job, shifts: shifts(of: job))
+        ShiftStats(job: job, shifts: shifts(of: job).logged)
     }
 
-    private var monthShifts: [Shift] { StatsEngine.shifts(allShifts, in: .month) }
+    /// Worked shifts only — a plan isn't earnings.
+    private var monthShifts: [Shift] { StatsEngine.shifts(allShifts, in: .month).logged }
     private var monthEarnings: Double { monthShifts.reduce(0) { $0 + $1.totalPay } }
     private var monthHours: Double { monthShifts.reduce(0) { $0 + $1.hours } }
     private var monthDays: Int { Set(monthShifts.map(\.day)).count }
@@ -48,9 +49,9 @@ struct ProfileView: View {
         monthShifts.filter { $0.job?.id == job.id }.reduce(0) { $0 + $1.totalPay }
     }
 
-    private var totalHours: Double { allShifts.reduce(0) { $0 + $1.hours } }
-    private var totalEarnings: Double { allShifts.reduce(0) { $0 + $1.totalPay } }
-    private var totalTips: Double { allShifts.reduce(0) { $0 + $1.tipsAmount } }
+    private var totalHours: Double { allShifts.logged.reduce(0) { $0 + $1.hours } }
+    private var totalEarnings: Double { allShifts.logged.reduce(0) { $0 + $1.totalPay } }
+    private var totalTips: Double { allShifts.logged.reduce(0) { $0 + $1.tipsAmount } }
     private var dayCount: Int { Set(allShifts.map(\.day)).count }
 
     private var buckets: [StatsEngine.Bucket] {
@@ -403,13 +404,13 @@ struct AllTimeCard: View {
     let jobs: [Job]
     let shifts: [Shift]
 
-    private var totalEarnings: Double { shifts.reduce(0) { $0 + $1.totalPay } }
-    private var totalHours: Double { shifts.reduce(0) { $0 + $1.hours } }
-    private var totalTips: Double { shifts.reduce(0) { $0 + $1.tipsAmount } }
-    private var dayCount: Int { Set(shifts.map(\.day)).count }
+    private var totalEarnings: Double { shifts.logged.reduce(0) { $0 + $1.totalPay } }
+    private var totalHours: Double { shifts.logged.reduce(0) { $0 + $1.hours } }
+    private var totalTips: Double { shifts.logged.reduce(0) { $0 + $1.tipsAmount } }
+    private var dayCount: Int { Set(shifts.logged.map(\.day)).count }
 
     private func stats(_ job: Job) -> ShiftStats {
-        ShiftStats(job: job, shifts: shifts.filter { $0.job?.id == job.id })
+        ShiftStats(job: job, shifts: shifts.logged.filter { $0.job?.id == job.id })
     }
 
     var body: some View {

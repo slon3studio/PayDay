@@ -53,6 +53,7 @@ struct ShiftEditorView: View {
     @State private var tipsText: String
     @State private var note: String
     @State private var breakMinutes: Int
+    @State private var isPlanned: Bool
     @State private var confirmingDelete = false
     @State private var dateFieldToken = UUID()
 
@@ -69,6 +70,7 @@ struct ShiftEditorView: View {
             _tipsText = State(initialValue: shift.tipsAmount > 0 ? String(format: "%.2f", shift.tipsAmount) : "")
             _note = State(initialValue: shift.note)
             _breakMinutes = State(initialValue: shift.breakMinutes)
+            _isPlanned = State(initialValue: shift.isPlanned)
         } else {
             var now = Date()
             if case .newOn(_, let picked) = target { now = picked }
@@ -82,6 +84,8 @@ struct ShiftEditorView: View {
             _tipsText = State(initialValue: "")
             _note = State(initialValue: "")
             _breakMinutes = State(initialValue: target.job.tracksBreaks ? target.job.defaultBreakMinutes : 0)
+            // A day that hasn't happened yet can only be a plan.
+            _isPlanned = State(initialValue: Calendar.current.startOfDay(for: now) > Calendar.current.startOfDay(for: .now))
         }
     }
 
@@ -133,7 +137,7 @@ struct ShiftEditorView: View {
     private var navigationTitle: String {
         switch target {
         case .edit: return "Edit shift"
-        case .new, .newOn: return "Log \(job.displayName) shift"
+        case .new, .newOn: return isPlanned ? "Plan \(job.displayName) shift" : "Log \(job.displayName) shift"
         }
     }
 
@@ -161,7 +165,7 @@ struct ShiftEditorView: View {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
+                    Button(isPlanned ? "Plan" : "Save") { save() }
                         .disabled(!canSave)
                 }
             }
@@ -176,6 +180,16 @@ struct ShiftEditorView: View {
     /// they are rather than two rows that look like settings.
     private var timesCard: some View {
         VStack(spacing: 0) {
+            Picker("", selection: $isPlanned.animation(.snappy)) {
+                Text("Worked").tag(false)
+                Text("Planned").tag(true)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 4)
+
             HStack(spacing: 0) {
                 timeBlock("Starts", selection: $checkInTime)
                 Rectangle()
@@ -354,11 +368,20 @@ struct ShiftEditorView: View {
                 .frame(width: 6)
 
             VStack(alignment: .leading, spacing: 10) {
-                HStack {
+                HStack(spacing: 6) {
                     Text(Fmt.dayHeader(Calendar.current.startOfDay(for: resolvedCheckIn)).uppercased())
                         .font(.caption2.weight(.semibold))
                         .tracking(0.6)
                         .foregroundStyle(.secondary)
+                    if isPlanned {
+                        Text("PLANNED")
+                            .font(.system(size: 9, weight: .heavy))
+                            .tracking(0.6)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(job.tint.opacity(0.16), in: Capsule())
+                            .foregroundStyle(job.tint)
+                    }
                     Spacer()
                     Image(systemName: job.symbol)
                         .font(.footnote)
@@ -369,7 +392,7 @@ struct ShiftEditorView: View {
                     Text(Fmt.money(duration * rate + (job.tracksTips ? tipsValue : 0)))
                         .font(.system(size: 34, weight: .bold, design: .rounded))
                         .monospacedDigit()
-                        .foregroundStyle(Palette.money)
+                        .foregroundStyle(isPlanned ? Color.secondary : Palette.money)
                         .contentTransition(.numericText())
                         .minimumScaleFactor(0.6)
                         .lineLimit(1)
@@ -419,6 +442,7 @@ struct ShiftEditorView: View {
             shift.checkOut = resolvedCheckOut
             shift.tips = tips
             shift.breakMinutes = unpaidBreak
+            shift.isPlanned = isPlanned
             shift.note = note.trimmingCharacters(in: .whitespacesAndNewlines)
         } else {
             let shift = Shift(
@@ -427,7 +451,8 @@ struct ShiftEditorView: View {
                 checkOut: resolvedCheckOut,
                 tips: tips,
                 note: note.trimmingCharacters(in: .whitespacesAndNewlines),
-                breakMinutes: unpaidBreak
+                breakMinutes: unpaidBreak,
+                isPlanned: isPlanned
             )
             context.insert(shift)
         }

@@ -323,7 +323,7 @@ struct TimesheetView: View {
     @Query(sort: \Shift.checkIn) private var shifts: [Shift]
 
     private var monthShifts: [Shift] {
-        shifts.filter { $0.job?.id == job.id && Calendar.current.isDate($0.checkIn, equalTo: month, toGranularity: .month) }
+        shifts.logged.filter { $0.job?.id == job.id && Calendar.current.isDate($0.checkIn, equalTo: month, toGranularity: .month) }
     }
 
     private var totalHours: Double { monthShifts.reduce(0) { $0 + $1.hours } }
