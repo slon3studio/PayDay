@@ -10,6 +10,7 @@ struct ContentView: View {
     /// it — and so the job editor can switch to a job it just created.
     @AppStorage("selectedTab") private var selectedTab = ""
     @AppStorage(Appearance.key) private var appearanceRaw: String = Appearance.system.rawValue
+    @AppStorage(UserProfile.colorKey) private var profileColorRaw = UserProfile.defaultColor.rawValue
     /// Not read here on purpose. Holding it at the root means changing the
     /// currency in Settings invalidates the whole tab tree, so every amount
     /// below redraws in the new one.
@@ -35,7 +36,8 @@ struct ContentView: View {
     /// by the app. Money stays green throughout either way, so the one figure
     /// that means the same thing everywhere always looks the same.
     private var tabTint: Color {
-        jobs.first { $0.id.uuidString == selection.wrappedValue }?.tint ?? Palette.brand
+        jobs.first { $0.id.uuidString == selection.wrappedValue }?.tint
+            ?? (JobColor(rawValue: profileColorRaw) ?? UserProfile.defaultColor).color
     }
 
     var body: some View {

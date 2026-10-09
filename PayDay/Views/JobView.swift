@@ -138,6 +138,14 @@ struct JobView: View {
                 }
 
                 Section {
+                    JobProjection(job: job, shifts: jobShifts)
+                        .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
+                        .listRowBackground(Color.clear)
+                } header: {
+                    SectionHeader("Projected · \(Fmt.monthTitle(.now))")
+                }
+
+                Section {
                     viewAllLink
                     NavigationLink {
                         TimesheetView(job: job, month: Calendar.current.startOfMonth(for: .now))
@@ -476,18 +484,24 @@ struct WeekStrip: View {
     /// Weeks away from this one. Negative is the past, positive the future —
     /// which is how you reach a day you haven't worked yet.
     @State private var offset = 0
-    @State private var drag: CGFloat = 0
+
+    /// How far either way you can page. Two years covers anything useful and
+    /// keeps the pager from building an unbounded number of pages.
+    private static let range = -104...104
 
     private var calendar: Calendar { Calendar.current }
 
-    private var weekStart: Date {
+    private func weekStart(_ week: Int) -> Date {
         let thisWeek = calendar.dateInterval(of: .weekOfYear, for: .now)?.start ?? .now
-        return calendar.date(byAdding: .weekOfYear, value: offset, to: thisWeek) ?? thisWeek
+        return calendar.date(byAdding: .weekOfYear, value: week, to: thisWeek) ?? thisWeek
     }
 
-    private var days: [Date] {
-        (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: weekStart) }
+    private func days(_ week: Int) -> [Date] {
+        (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: weekStart(week)) }
     }
+
+    private var weekStart: Date { weekStart(offset) }
+    private var days: [Date] { days(offset) }
 
     /// "This week", "Next week", or the dates when it's further out.
     private var title: String {
@@ -505,12 +519,9 @@ struct WeekStrip: View {
         }
     }
 
-    private var shiftsByDay: [Date: [Shift]] {
-        Dictionary(grouping: shifts.filter { days.contains($0.day) }, by: \.day)
-    }
-
     private var weekHours: Double {
-        shiftsByDay.values.joined().reduce(0) { $0 + $1.hours }
+        let week = Set(days)
+        return shifts.filter { week.contains($0.day) }.reduce(0) { $0 + $1.hours }
     }
 
     var body: some View {
@@ -543,30 +554,26 @@ struct WeekStrip: View {
                 step(1, "chevron.right")
             }
 
-            HStack(spacing: 6) {
-                ForEach(days, id: \.self) { day in
-                    cell(day, shifts: shiftsByDay[day] ?? [])
+            TabView(selection: $offset) {
+                ForEach(Array(Self.range), id: \.self) { week in
+                    HStack(spacing: 6) {
+                        ForEach(days(week), id: \.self) { day in
+                            cell(day, shifts: shifts(on: day))
+                        }
+                    }
+                    .frame(maxHeight: .infinity, alignment: .top)
+                    .tag(week)
                 }
             }
-            .offset(x: drag)
-            .animation(.snappy, value: offset)
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .frame(height: 68)
         }
         .padding(14)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
-        .contentShape(Rectangle())
-        // Swipe the strip the way you'd swipe a calendar. The arrows are
-        // there too, because a swipe isn't discoverable on its own.
-        .gesture(
-            DragGesture(minimumDistance: 18)
-                .onChanged { drag = $0.translation.width / 4 }
-                .onEnded { value in
-                    withAnimation(.snappy) {
-                        if value.translation.width < -40 { offset += 1 }
-                        else if value.translation.width > 40 { offset -= 1 }
-                        drag = 0
-                    }
-                }
-        )
+    }
+
+    private func shifts(on day: Date) -> [Shift] {
+        shifts.filter { $0.day == day }
     }
 
     private func step(_ by: Int, _ symbol: String) -> some View {
@@ -755,3 +762,35 @@ struct PlannedRow: View {
         .padding(.vertical, 2)
     }
 }
+
+struct JobProjection: View {
+    let job: Job
+    let shifts: [Shift]
+
+    @AppStorage private var basisRaw: String
+
+    init(job: Job, shifts: [Shift]) {
+        self.job = job
+        self.shifts = shifts
+        let fallback: ProjectionBasis = job.worksWeekends ? .pattern : .weekdays
+        _basisRaw = AppStorage(wrappedValue: fallback.rawValue, job.projectionBasisKey)
+    }
+
+    private var basis: Binding<ProjectionBasis> {
+        Binding(
+            get: { ProjectionBasis(rawValue: basisRaw) ?? .weekdays },
+            set: { basisRaw = $0.rawValue }
+        )
+    }
+
+    var body: some View {
+        ProjectionCard(
+            projection: StatsEngine.projection(for: job, allShiftsForJob: shifts, basis: basis.wrappedValue),
+            basis: basis
+        )
+    }
+}
+
+// MARK: - Your profile
+
+/// Your emoji, or your initials when there's no emoji, on your colour.

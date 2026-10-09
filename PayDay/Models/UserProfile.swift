@@ -7,12 +7,12 @@ enum UserProfile {
     static let roleKey = "profileRole"
     /// Shown in the avatar instead of initials. Empty means initials.
     static let emojiKey = "profileEmoji"
-    // There was a profile colour here, and it was the one piece of
-    // customisation that bought nothing. It recoloured the Profile tab and
-    // Settings and left the rest of the app green, so which tab you were on
-    // decided what the app looked like. PayDay's chrome is PayDay's colour
-    // now, always. Job colours remain, because telling two jobs apart at a
-    // glance is work worth doing.
+    /// Your colour. It tints the Profile tab the way a job's colour tints
+    /// its own — each tab carries the colour of what it's about. It stops at
+    /// the tab, which is what went wrong the first time: it used to leak into
+    /// chrome that had nothing to do with you.
+    static let colorKey = "profileColor"
+    static let defaultColor = JobColor.green
     static let startedKey = "profileStarted"
 
     static var name: String {

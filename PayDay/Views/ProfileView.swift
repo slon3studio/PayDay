@@ -13,6 +13,9 @@ struct ProfileView: View {
     @AppStorage(UserProfile.nameKey) private var name = ""
     @AppStorage(UserProfile.roleKey) private var role = ""
     @AppStorage(UserProfile.emojiKey) private var emoji = ""
+    @AppStorage(UserProfile.colorKey) private var colorRaw = UserProfile.defaultColor.rawValue
+
+    private var profileColor: JobColor { JobColor(rawValue: colorRaw) ?? UserProfile.defaultColor }
 
     @State private var granularity: Granularity = .month
     @State private var metric: ProfileMetric = .hours
@@ -95,14 +98,15 @@ struct ProfileView: View {
 
             if !allShifts.isEmpty {
                 Section {
-                    ForEach(jobs) { job in
-                        JobProjection(job: job, shifts: shifts(of: job))
-                            .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                    }
+                    outlookCard
+                        .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
+                        .listRowBackground(Color.clear)
                 } header: {
-                    SectionHeader("Projected pay · \(Fmt.monthTitle(.now))")
+                    SectionHeader("Outlook · \(Fmt.monthTitle(.now))")
+                } footer: {
+                    Text(jobs.count > 1
+                         ? "Every job added together. Each one's own projection is on its tab."
+                         : "The full projection, with its settings, is on the job's tab.")
                 }
 
                 Section {
@@ -125,36 +129,98 @@ struct ProfileView: View {
 
     // MARK: - You
 
+    // MARK: - Outlook
+
+    private func projection(of job: Job) -> MonthProjection {
+        let basis = ProjectionBasis(rawValue: UserDefaults.standard.string(forKey: job.projectionBasisKey) ?? "")
+            ?? (job.worksWeekends ? .pattern : .weekdays)
+        return StatsEngine.projection(for: job, allShiftsForJob: shifts(of: job), basis: basis)
+    }
+
+    private var projections: [(job: Job, projection: MonthProjection)] {
+        jobs.map { ($0, projection(of: $0)) }
+    }
+
+    /// Where the month lands across every job. One card rather than one per
+    /// job: a stack of near-identical cards was the reason this tab felt
+    /// busier than a job's own.
+    private var outlookCard: some View {
+        let all = projections
+        let total = all.reduce(0) { $0 + $1.projection.projectedTotal }
+        let worked = all.reduce(0) { $0 + $1.projection.payToDate }
+        let planned = all.reduce(0) { $0 + $1.projection.plannedPay }
+        let estimated = max(0, total - worked - planned)
+
+        return VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 2) {
+                Eyebrow("Projected total", opacity: 1).foregroundStyle(.secondary)
+                MoneyText(amount: total, size: 34)
+                Text("by the end of \(Fmt.monthTitle(.now))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            // The same three-way split the job tabs use, so the two screens
+            // agree about what is known and what is guessed.
+            VStack(spacing: 7) {
+                outlookPart("Worked", worked, Palette.money)
+                if planned > 0 { outlookPart("Planned", planned, .secondary) }
+                outlookPart("Estimated", estimated, .secondary)
+            }
+
+            if jobs.count > 1 {
+                Divider()
+                VStack(spacing: 7) {
+                    ForEach(all, id: \.job.id) { entry in
+                        outlookPart(entry.job.displayName,
+                                    entry.projection.projectedTotal,
+                                    entry.job.tint)
+                    }
+                }
+            }
+        }
+        .cardSurface()
+    }
+
+    private func outlookPart(_ label: String, _ amount: Double, _ tint: Color) -> some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(tint == .secondary ? Color.secondary.opacity(0.4) : tint)
+                .frame(width: 7, height: 7)
+            Text(label)
+                .font(.subheadline)
+            Spacer(minLength: 8)
+            Text(Fmt.money(amount))
+                .font(.subheadline.weight(.semibold))
+                .monospacedDigit()
+                .foregroundStyle(tint == .secondary ? Color.secondary : tint)
+        }
+    }
+
     /// Identity and this month in one card, in the app's own green — the
     /// counterpart to the gradient card each job tab opens with. Profile used
     /// to be a white row with a name in it, which looked like a settings
     /// screen wearing the app's clothes.
     private var profileHeader: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Button {
-                editingProfile = true
-            } label: {
-                HStack(spacing: 12) {
-                    ProfileAvatar(emoji: emoji, name: name, size: 46, onColour: true)
-                        .overlay(Circle().strokeBorder(.white.opacity(0.85), lineWidth: 2))
+            HStack(spacing: 12) {
+                ProfileAvatar(emoji: emoji, name: name, color: profileColor, size: 46, onColour: true)
+                    .overlay(Circle().strokeBorder(.white.opacity(0.85), lineWidth: 2))
 
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(name.isEmpty ? "Add your name" : name)
-                            .font(.headline)
-                        Text(subtitle)
-                            .font(.caption)
-                            .opacity(0.85)
-                    }
-
-                    Spacer(minLength: 0)
-
-                    Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
-                        .opacity(0.7)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(name.isEmpty ? "Add your name" : name)
+                        .font(.headline)
+                    Text(subtitle)
+                        .font(.caption)
+                        .opacity(0.85)
                 }
-                .contentShape(Rectangle())
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .opacity(0.7)
             }
-            .buttonStyle(.plain)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(Fmt.money(monthEarnings))
@@ -179,8 +245,13 @@ struct ProfileView: View {
         .foregroundStyle(.white)
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Palette.brandGradient,
-                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+        .background(
+            LinearGradient(colors: [profileColor.color, profileColor.gradientEnd],
+                           startPoint: .topLeading, endPoint: .bottomTrailing),
+            in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous)
+        )
+        .contentShape(Rectangle())
+        .onTapGesture { editingProfile = true }
     }
 
     /// What goes under the name: the role if there is one, otherwise how long
@@ -470,40 +541,10 @@ struct AllTimeCard: View {
     }
 }
 
-private struct JobProjection: View {
-    let job: Job
-    let shifts: [Shift]
-
-    @AppStorage private var basisRaw: String
-
-    init(job: Job, shifts: [Shift]) {
-        self.job = job
-        self.shifts = shifts
-        let fallback: ProjectionBasis = job.worksWeekends ? .pattern : .weekdays
-        _basisRaw = AppStorage(wrappedValue: fallback.rawValue, job.projectionBasisKey)
-    }
-
-    private var basis: Binding<ProjectionBasis> {
-        Binding(
-            get: { ProjectionBasis(rawValue: basisRaw) ?? .weekdays },
-            set: { basisRaw = $0.rawValue }
-        )
-    }
-
-    var body: some View {
-        ProjectionCard(
-            projection: StatsEngine.projection(for: job, allShiftsForJob: shifts, basis: basis.wrappedValue),
-            basis: basis
-        )
-    }
-}
-
-// MARK: - Your profile
-
-/// Your emoji, or your initials when there's no emoji, on your colour.
 struct ProfileAvatar: View {
     let emoji: String
     let name: String
+    var color: JobColor = UserProfile.defaultColor
     var size: CGFloat = 60
     /// Sitting on a coloured card rather than a grey one.
     var onColour = false
@@ -533,7 +574,8 @@ struct ProfileAvatar: View {
                 if onColour {
                     Circle().fill(.white.opacity(0.22))
                 } else {
-                    Circle().fill(Palette.brandGradient)
+                    Circle().fill(LinearGradient(colors: [color.color, color.gradientEnd],
+                                                 startPoint: .topLeading, endPoint: .bottomTrailing))
                 }
             }
     }
@@ -553,7 +595,10 @@ struct ProfileEditorView: View {
     @AppStorage(UserProfile.nameKey) private var name = ""
     @AppStorage(UserProfile.roleKey) private var role = ""
     @AppStorage(UserProfile.emojiKey) private var emoji = ""
+    @AppStorage(UserProfile.colorKey) private var colorRaw = UserProfile.defaultColor.rawValue
 
+
+    private var color: JobColor { JobColor(rawValue: colorRaw) ?? UserProfile.defaultColor }
 
     /// Kept short and even-tempered. The long list was the problem.
     private static let emojis = ["🙂", "😎", "🧑‍💻", "🧑‍🍳", "🎧", "☕️", "📚", "⚡️"]
@@ -583,10 +628,11 @@ struct ProfileEditorView: View {
 
                 Section {
                     avatarRow
+                    colourRow
                 } header: {
-                    SectionHeader("Avatar")
+                    SectionHeader("Appearance")
                 } footer: {
-                    Text("Shown wherever the app refers to you. Pick your initials to go without one.")
+                    Text("Your colour tints the Profile tab, the way a job's colour tints its own.")
                 }
 
                 if !allShifts.isEmpty {
@@ -610,14 +656,14 @@ struct ProfileEditorView: View {
                 }
             }
         }
-        .tint(Palette.brand)
+        .tint(color.color)
     }
 
     // MARK: - Pieces
 
     private var header: some View {
         VStack(spacing: 10) {
-            ProfileAvatar(emoji: emoji, name: name, size: 88)
+            ProfileAvatar(emoji: emoji, name: name, color: color, size: 88)
             VStack(spacing: 2) {
                 Text(name.isEmpty ? "Your name" : name)
                     .font(.title2.weight(.bold))
@@ -632,6 +678,7 @@ struct ProfileEditorView: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 20)
         .animation(.snappy, value: emoji)
+        .animation(.snappy, value: colorRaw)
     }
 
     /// Each option drawn as the avatar it would produce, so the row is a
@@ -671,12 +718,41 @@ struct ProfileEditorView: View {
         Button(action: action) {
             content()
                 .frame(width: 44, height: 44)
-                .background(Palette.brandGradient, in: Circle())
+                .background(
+                    LinearGradient(colors: [color.color, color.gradientEnd],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing),
+                    in: Circle()
+                )
                 .overlay(Circle().strokeBorder(Color.primary.opacity(isSelected ? 0.9 : 0), lineWidth: 2))
                 .padding(2)
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private var colourRow: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Colour")
+                .font(.subheadline)
+            HStack(spacing: 0) {
+                ForEach(JobColor.allCases) { option in
+                    Button { colorRaw = option.rawValue } label: {
+                        Circle()
+                            .fill(option.color)
+                            .frame(width: 26, height: 26)
+                            .overlay(Circle().strokeBorder(.background, lineWidth: option == color ? 2 : 0))
+                            .overlay(Circle()
+                                .strokeBorder(Color.primary.opacity(option == color ? 0.9 : 0), lineWidth: 2)
+                                .padding(-3))
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(option.label)
+                    .accessibilityAddTraits(option == color ? .isSelected : [])
+                }
+            }
+        }
+        .padding(.vertical, 4)
     }
 
     private var initials: String {
