@@ -140,9 +140,13 @@ struct ProfileView: View {
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
-                    Text("Tracking since \(trackingSince.formatted(.dateTime.day().month(.wide).year()))")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
+                    // "Tracking since today" is a statistic about nothing.
+                    // It earns its place once there's a week behind it.
+                    if hasHistory {
+                        Text("Tracking since \(trackingSince.formatted(.dateTime.day().month(.wide).year()))")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
                 }
 
                 Spacer(minLength: 0)
@@ -163,6 +167,11 @@ struct ProfileView: View {
     /// earlier. History carried over from before profiles beats the install date.
     private var trackingSince: Date {
         min(allShifts.last?.checkIn ?? .distantFuture, UserProfile.started)
+    }
+
+    /// A week is roughly when "since" starts meaning something.
+    private var hasHistory: Bool {
+        trackingSince < Calendar.current.date(byAdding: .day, value: -7, to: .now) ?? .now
     }
 
     // MARK: - Jobs
@@ -414,15 +423,25 @@ struct ProfileAvatar: View {
     let color: JobColor
     var size: CGFloat = 60
 
-    /// Up to two letters from the name, or a face when there isn't one yet.
+    /// Up to two letters from the name. With no name there's nothing to
+    /// abbreviate, so the avatar invites you to set one instead.
     private var initials: String {
         let letters = name.split(separator: " ").prefix(2).compactMap(\.first)
-        return letters.isEmpty ? "🙂" : String(letters).uppercased()
+        return String(letters).uppercased()
     }
 
+    private var isEmpty: Bool { emoji.isEmpty && initials.isEmpty }
+
     var body: some View {
-        Text(emoji.isEmpty ? initials : emoji)
-            .font(.system(size: size * (emoji.isEmpty ? 0.38 : 0.5), weight: .bold, design: .rounded))
+        Group {
+            if isEmpty {
+                Image(systemName: "plus")
+                    .font(.system(size: size * 0.34, weight: .bold))
+            } else {
+                Text(emoji.isEmpty ? initials : emoji)
+                    .font(.system(size: size * (emoji.isEmpty ? 0.38 : 0.5), weight: .bold, design: .rounded))
+            }
+        }
             .foregroundStyle(.white)
             .frame(width: size, height: size)
             .background(

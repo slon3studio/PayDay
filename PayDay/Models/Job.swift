@@ -20,6 +20,12 @@ final class Job {
     /// Times a new shift starts out with, as minutes past midnight.
     var defaultCheckInMinutes: Int = 9 * 60
     var defaultCheckOutMinutes: Int = 17 * 60
+    /// Whether an unpaid break comes off this job's shifts. Off unless you
+    /// say otherwise — plenty of jobs don't deduct one, and silently
+    /// shortening everyone's shifts would be worse than ignoring breaks.
+    var tracksBreaks: Bool = false
+    /// How long that break usually is. New shifts start out with it.
+    var defaultBreakMinutes: Int = 30
     /// Position in the tab bar.
     var sortOrder: Int = 0
     var createdAt: Date = Date()
@@ -45,6 +51,8 @@ final class Job {
         worksWeekends: Bool = false,
         defaultCheckInMinutes: Int = 9 * 60,
         defaultCheckOutMinutes: Int = 17 * 60,
+        tracksBreaks: Bool = false,
+        defaultBreakMinutes: Int = 30,
         sortOrder: Int = 0
     ) {
         self.id = UUID()
@@ -56,6 +64,8 @@ final class Job {
         self.worksWeekends = worksWeekends
         self.defaultCheckInMinutes = defaultCheckInMinutes
         self.defaultCheckOutMinutes = defaultCheckOutMinutes
+        self.tracksBreaks = tracksBreaks
+        self.defaultBreakMinutes = defaultBreakMinutes
         self.sortOrder = sortOrder
         self.createdAt = .now
     }

@@ -15,6 +15,10 @@ final class Shift {
     /// months that are already paid. `nil` on shifts from before the rate was
     /// recorded, which fall back to the job's current rate.
     var rate: Double?
+    /// Unpaid break taken on this shift, in minutes. Stored per shift
+    /// rather than read off the job, so a shift logged before the job
+    /// started deducting breaks keeps the hours it was logged with.
+    var breakMinutes: Int = 0
     /// The job this shift belongs to. Optional so that adding jobs to a store
     /// that predates them is a migration SwiftData can do on its own; the
     /// first launch after the update fills it in.
@@ -30,7 +34,8 @@ final class Shift {
         checkOut: Date,
         tips: Double? = nil,
         note: String = "",
-        rate: Double? = nil
+        rate: Double? = nil,
+        breakMinutes: Int = 0
     ) {
         self.id = UUID()
         self.job = job
@@ -39,11 +44,18 @@ final class Shift {
         self.tips = tips
         self.note = note
         self.rate = rate ?? job?.hourlyRate
+        self.breakMinutes = breakMinutes
     }
 
-    /// Worked hours, always positive.
+    /// Hours actually worked: the span, less any unpaid break. Always
+    /// positive, and never negative even if the break outlasts the shift.
     var hours: Double {
-        max(0, checkOut.timeIntervalSince(checkIn)) / 3600
+        max(0, span - Double(breakMinutes) * 60) / 3600
+    }
+
+    /// Check-in to check-out, break included. What the clock says.
+    var span: Double {
+        max(0, checkOut.timeIntervalSince(checkIn))
     }
 
     /// The calendar day the shift is attributed to (the day it started).

@@ -38,6 +38,25 @@ struct ContentView: View {
     }
 
     var body: some View {
+        Group {
+            // With no jobs there is nothing for the tabs to show, and Profile
+            // on its own is a settings page standing in for a first screen.
+            if jobs.isEmpty {
+                WelcomeView()
+            } else {
+                tabs
+            }
+        }
+        .animation(.snappy, value: jobs.isEmpty)
+        .tint(tint)
+        .fontDesign(.rounded)
+        .preferredColorScheme(Appearance(rawValue: appearanceRaw)?.colorScheme)
+        // One recognizer on the window covers every screen, so tapping away
+        // from a field closes the keyboard anywhere in the app.
+        .onAppear { KeyboardDismisser.shared.install() }
+    }
+
+    private var tabs: some View {
         TabView(selection: selection) {
             ForEach(jobs) { job in
                 JobView(job: job)
@@ -49,12 +68,6 @@ struct ContentView: View {
                 .tag(Self.profileTag)
                 .tabItem { Label("Profile", systemImage: "person.crop.circle") }
         }
-        .tint(tint)
-        .fontDesign(.rounded)
-        .preferredColorScheme(Appearance(rawValue: appearanceRaw)?.colorScheme)
-        // One recognizer on the window covers every screen, so tapping away
-        // from a field closes the keyboard anywhere in the app.
-        .onAppear { KeyboardDismisser.shared.install() }
     }
 }
 

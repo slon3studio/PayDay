@@ -16,6 +16,7 @@
 		3691FD6558275EA67FD77150 /* ProjectionCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15FC50B042E95AC01D668AAB /* ProjectionCard.swift */; };
 		3B02289539399782954139FB /* Formatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E48D0C158949C1A3921A2C6 /* Formatters.swift */; };
 		491C903DE5614D17CDE1FCCB /* ShiftEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5647CFD84E274D5C930FEDC4 /* ShiftEditorView.swift */; };
+		67DE59DF38B7609125F6DBEE /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD5B37EAAA21865F56E67794 /* WelcomeView.swift */; };
 		80382182F499760C486FA54B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83B6A10F3EEE12254397EA6D /* ContentView.swift */; };
 		8E85518661DA96A1FC02F106 /* TimesheetExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B7DCEABF2E51F0DB4C636CB /* TimesheetExport.swift */; };
 		929204598E26710A95AB1833 /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCE71B3611DAE924AAD24A2C /* UserProfile.swift */; };
@@ -23,8 +24,10 @@
 		9E46D3F943BB5730B59E4EC9 /* MonthPayment.swift in Sources */ = {isa = PBXBuildFile; fileRef = D64B87F4183A524CBCF2B9FD /* MonthPayment.swift */; };
 		9F708C2D55BD69A246758E0C /* PreviewData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C206FD3435F9D00E317A9AF /* PreviewData.swift */; };
 		A0AEF4C0E8BFAADBB131B901 /* Job.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3397059578EE9D68B06B9D4 /* Job.swift */; };
+		A27323BA8408A1D45F35653B /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA4791D081C0E07C1CF403B6 /* Haptics.swift */; };
 		A6166A3D631BA00332ABF078 /* Shift.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE1517F8195A737C702698C9 /* Shift.swift */; };
 		AC44634C249AAAA535848AFA /* JobView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 700B3ADB7A9173C66820F12A /* JobView.swift */; };
+		B5392AF476B55292DA0182B1 /* JobTemplate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C23BE0A42ED16029186AACE /* JobTemplate.swift */; };
 		C93A807896020D54256EFAF8 /* MonthHeatmap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A7C352CB5B23BFBCC751F72 /* MonthHeatmap.swift */; };
 		CDAD0CD81D09D07C4F2AE498 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 96AECD55230B142A242C318C /* Assets.xcassets */; };
 		E89EC8CAC8188BC03E6B3B74 /* JobEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58E2CA854F4680F60462AB0B /* JobEditorView.swift */; };
@@ -40,6 +43,7 @@
 		15FC50B042E95AC01D668AAB /* ProjectionCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectionCard.swift; sourceTree = "<group>"; };
 		2B578F0640B0A8E206D43907 /* PayDayApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PayDayApp.swift; sourceTree = "<group>"; };
 		3A7C352CB5B23BFBCC751F72 /* MonthHeatmap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthHeatmap.swift; sourceTree = "<group>"; };
+		3C23BE0A42ED16029186AACE /* JobTemplate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobTemplate.swift; sourceTree = "<group>"; };
 		442FDF6C414B104C38825721 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		528D5FA4D0D8BAB341DAC866 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		5647CFD84E274D5C930FEDC4 /* ShiftEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShiftEditorView.swift; sourceTree = "<group>"; };
@@ -56,11 +60,13 @@
 		B3397059578EE9D68B06B9D4 /* Job.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Job.swift; sourceTree = "<group>"; };
 		C964E1A0E7CC97E9264697CB /* AppSetup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSetup.swift; sourceTree = "<group>"; };
 		C9EEEC10AB1A5DC4D3274728 /* MarkPaidSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkPaidSheet.swift; sourceTree = "<group>"; };
+		CA4791D081C0E07C1CF403B6 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
 		CCE71B3611DAE924AAD24A2C /* UserProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfile.swift; sourceTree = "<group>"; };
 		CDC9CE014DC8CC4812A3DF0A /* KeyboardDismiss.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardDismiss.swift; sourceTree = "<group>"; };
 		D23D147CEFFBB7D654D229B1 /* StatTile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatTile.swift; sourceTree = "<group>"; };
 		D2A39B94B79ACEB845096916 /* MonthlyGoal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyGoal.swift; sourceTree = "<group>"; };
 		D64B87F4183A524CBCF2B9FD /* MonthPayment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthPayment.swift; sourceTree = "<group>"; };
+		DD5B37EAAA21865F56E67794 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		E95693D236DEEF9F3AEA73CB /* JobAppearance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobAppearance.swift; sourceTree = "<group>"; };
 		ED1D360C28C68282F7F3E7D5 /* PayDay.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PayDay.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -81,6 +87,7 @@
 				C964E1A0E7CC97E9264697CB /* AppSetup.swift */,
 				B3397059578EE9D68B06B9D4 /* Job.swift */,
 				E95693D236DEEF9F3AEA73CB /* JobAppearance.swift */,
+				3C23BE0A42ED16029186AACE /* JobTemplate.swift */,
 				D2A39B94B79ACEB845096916 /* MonthlyGoal.swift */,
 				D64B87F4183A524CBCF2B9FD /* MonthPayment.swift */,
 				AE1517F8195A737C702698C9 /* Shift.swift */,
@@ -124,6 +131,7 @@
 			isa = PBXGroup;
 			children = (
 				7E48D0C158949C1A3921A2C6 /* Formatters.swift */,
+				CA4791D081C0E07C1CF403B6 /* Haptics.swift */,
 				CDC9CE014DC8CC4812A3DF0A /* KeyboardDismiss.swift */,
 				8C206FD3435F9D00E317A9AF /* PreviewData.swift */,
 				5B7DCEABF2E51F0DB4C636CB /* TimesheetExport.swift */,
@@ -160,6 +168,7 @@
 				15FC50B042E95AC01D668AAB /* ProjectionCard.swift */,
 				5647CFD84E274D5C930FEDC4 /* ShiftEditorView.swift */,
 				D23D147CEFFBB7D654D229B1 /* StatTile.swift */,
+				DD5B37EAAA21865F56E67794 /* WelcomeView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -251,9 +260,11 @@
 				05EDD9B17BA35BEC1C43E5E7 /* AppSetup.swift in Sources */,
 				80382182F499760C486FA54B /* ContentView.swift in Sources */,
 				3B02289539399782954139FB /* Formatters.swift in Sources */,
+				A27323BA8408A1D45F35653B /* Haptics.swift in Sources */,
 				A0AEF4C0E8BFAADBB131B901 /* Job.swift in Sources */,
 				EB0F3F86AC7294AF0FFD370F /* JobAppearance.swift in Sources */,
 				E89EC8CAC8188BC03E6B3B74 /* JobEditorView.swift in Sources */,
+				B5392AF476B55292DA0182B1 /* JobTemplate.swift in Sources */,
 				AC44634C249AAAA535848AFA /* JobView.swift in Sources */,
 				2628478316B323478C49FDE2 /* KeyboardDismiss.swift in Sources */,
 				31870D3EC09539F58B592BFC /* MarkPaidSheet.swift in Sources */,
@@ -270,6 +281,7 @@
 				182153C6279C7B1C984F9333 /* StatTile.swift in Sources */,
 				8E85518661DA96A1FC02F106 /* TimesheetExport.swift in Sources */,
 				929204598E26710A95AB1833 /* UserProfile.swift in Sources */,
+				67DE59DF38B7609125F6DBEE /* WelcomeView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

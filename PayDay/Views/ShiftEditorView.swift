@@ -52,6 +52,7 @@ struct ShiftEditorView: View {
     @State private var checkOutTime: Date
     @State private var tipsText: String
     @State private var note: String
+    @State private var breakMinutes: Int
     @State private var confirmingDelete = false
     @State private var dateFieldToken = UUID()
 
@@ -67,6 +68,7 @@ struct ShiftEditorView: View {
             _checkOutTime = State(initialValue: shift.checkOut)
             _tipsText = State(initialValue: shift.tipsAmount > 0 ? String(format: "%.2f", shift.tipsAmount) : "")
             _note = State(initialValue: shift.note)
+            _breakMinutes = State(initialValue: shift.breakMinutes)
         } else {
             var now = Date()
             if case .newOn(_, let picked) = target { now = picked }
@@ -79,6 +81,7 @@ struct ShiftEditorView: View {
             _checkOutTime = State(initialValue: end)
             _tipsText = State(initialValue: "")
             _note = State(initialValue: "")
+            _breakMinutes = State(initialValue: target.job.tracksBreaks ? target.job.defaultBreakMinutes : 0)
         }
     }
 
@@ -95,8 +98,14 @@ struct ShiftEditorView: View {
         return Calendar.current.date(byAdding: .day, value: 1, to: sameDay) ?? sameDay
     }
 
-    private var duration: Double {
+    /// The span between the two pickers, break included.
+    private var span: Double {
         max(0, resolvedCheckOut.timeIntervalSince(resolvedCheckIn)) / 3600
+    }
+
+    /// What the shift actually counts for, and what it's paid on.
+    private var duration: Double {
+        max(0, span - Double(breakMinutes) / 60)
     }
 
     private var isOvernight: Bool {
@@ -156,12 +165,29 @@ struct ShiftEditorView: View {
                     }
                 }
 
+                if job.tracksBreaks {
+                    Section {
+                        Picker("Unpaid break", selection: $breakMinutes) {
+                            Text("None").tag(0)
+                            ForEach([15, 20, 30, 45, 60], id: \.self) { minutes in
+                                Text("\(minutes) min").tag(minutes)
+                            }
+                        }
+                    } footer: {
+                        Text("Comes off the hours this shift counts for.")
+                    }
+                }
+
                 Section("Note") {
                     TextField("Optional", text: $note, axis: .vertical)
                         .lineLimit(1...3)
                 }
 
                 Section {
+                    if breakMinutes > 0 {
+                        StatRow(label: "On the clock", value: Fmt.hours(span))
+                        StatRow(label: "Break", value: "−\(breakMinutes) min")
+                    }
                     StatRow(label: "Hours", value: Fmt.hours(duration), emphasized: true, tint: job.tint)
                     StatRow(label: "Base pay", value: Fmt.money(duration * rate))
                     if job.tracksTips {
@@ -213,10 +239,14 @@ struct ShiftEditorView: View {
     private func save() {
         let tips = job.tracksTips ? tipsValue : nil
 
+        // A job that doesn't deduct breaks can't leave one behind on a shift.
+        let unpaidBreak = job.tracksBreaks ? breakMinutes : 0
+
         if let shift = target.existing {
             shift.checkIn = resolvedCheckIn
             shift.checkOut = resolvedCheckOut
             shift.tips = tips
+            shift.breakMinutes = unpaidBreak
             shift.note = note.trimmingCharacters(in: .whitespacesAndNewlines)
         } else {
             let shift = Shift(
@@ -224,10 +254,12 @@ struct ShiftEditorView: View {
                 checkIn: resolvedCheckIn,
                 checkOut: resolvedCheckOut,
                 tips: tips,
-                note: note.trimmingCharacters(in: .whitespacesAndNewlines)
+                note: note.trimmingCharacters(in: .whitespacesAndNewlines),
+                breakMinutes: unpaidBreak
             )
             context.insert(shift)
         }
+        Haptics.success()
         dismiss()
     }
 

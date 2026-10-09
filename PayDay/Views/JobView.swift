@@ -110,6 +110,7 @@ struct JobView: View {
                         onUndo: repeatedShift != nil && repeatedShift === todayShift ? {
                             if let shift = repeatedShift {
                                 withAnimation(.snappy) { context.delete(shift) }
+                                Haptics.tap()
                             }
                             repeatedShift = nil
                         } : nil
@@ -185,6 +186,7 @@ struct JobView: View {
         )
         context.insert(shift)
         repeatedShift = shift
+        Haptics.success()
     }
 
     /// Way into the full month-by-month history, sitting just above the

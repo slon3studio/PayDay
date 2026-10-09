@@ -30,6 +30,7 @@ struct JobEditorView: View {
 
     /// Shared with `ContentView`, so a new job opens on its own tab.
     @AppStorage("selectedTab") private var selectedTab = ""
+    @AppStorage(UserProfile.colorKey) private var profileColorRaw = UserProfile.defaultColor.rawValue
 
     @State private var name: String
     @State private var color: JobColor
@@ -41,7 +42,12 @@ struct JobEditorView: View {
     @State private var checkOut: Date
     @State private var goalText: String
     @State private var goalKind: GoalKind
+    @State private var tracksBreaks: Bool
+    @State private var breakMinutes: Int
     @State private var confirmingDelete = false
+    /// A new job starts on the template grid; picking one — or skipping —
+    /// drops into the form. Editing an existing job never shows it.
+    @State private var choosingTemplate: Bool
 
     init(target: JobEditorTarget) {
         self.target = target
@@ -59,6 +65,9 @@ struct JobEditorView: View {
         let goal = job?.goalTarget ?? 0
         _goalText = State(initialValue: goal > 0 ? String(format: "%g", goal) : "")
         _goalKind = State(initialValue: job?.goalKind ?? .money)
+        _tracksBreaks = State(initialValue: job?.tracksBreaks ?? false)
+        _breakMinutes = State(initialValue: job?.defaultBreakMinutes ?? 30)
+        _choosingTemplate = State(initialValue: job == nil)
     }
 
     private var rate: Double {
@@ -80,115 +89,243 @@ struct JobEditorView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    preview
-                        .listRowInsets(EdgeInsets())
-                        .listRowBackground(Color.clear)
-                }
-
-                Section {
-                    TextField("e.g. Café, Office, Tutoring", text: $name)
-                } header: {
-                    Text("Name")
-                } footer: {
-                    Text("Shown on its tab. Emoji welcome.")
-                }
-
-                Section("Colour") {
-                    colorGrid
-                }
-
-                Section("Icon") {
-                    symbolGrid
-                }
-
-                Section {
-                    HStack {
-                        Text("Hourly rate")
-                        Spacer()
-                        TextField("0.00", text: $rateText)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                            .monospacedDigit()
-                            .frame(maxWidth: 90)
-                        Text("€/h").foregroundStyle(.secondary)
-                    }
-                    Toggle("Tips", isOn: $tracksTips)
-                } header: {
-                    Text("Pay")
-                } footer: {
-                    Text(target.existing == nil
-                         ? "Turn on Tips for a job where you get them — waiting tables, a bar."
-                         : "A new rate applies to shifts you log from now on — ones already logged keep theirs.")
-                }
-
-                Section {
-                    DatePicker("Starts", selection: $checkIn, displayedComponents: .hourAndMinute)
-                    DatePicker("Ends", selection: $checkOut, displayedComponents: .hourAndMinute)
-                    Toggle("Works weekends", isOn: $worksWeekends)
-                } header: {
-                    Text("Usual shift")
-                } footer: {
-                    Text("New shifts start out with these times. Weekends count toward the month's projection when on.")
-                }
-
-                Section {
-                    HStack {
-                        Text("Target")
-                        Spacer()
-                        TextField("None", text: $goalText)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                            .monospacedDigit()
-                            .frame(maxWidth: 110)
-                        Text(goalKind.isMoney ? "€" : "h")
-                            .foregroundStyle(.secondary)
-                            .frame(width: 14, alignment: .leading)
-                    }
-                    Picker("Goal in", selection: $goalKind.animation(.default)) {
-                        ForEach(GoalKind.allCases) { Text($0.rawValue).tag($0) }
-                    }
-                    .pickerStyle(.segmented)
-                } header: {
-                    Text("Monthly goal")
-                } footer: {
-                    Text("Shown as progress on the job's tab and its projection. Leave blank for none.")
-                }
-
-                if target.existing != nil {
-                    Section {
-                        Button(role: .destructive) {
-                            confirmingDelete = true
-                        } label: {
-                            Label("Delete job", systemImage: "trash")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .alert("Delete \(trimmedName.isEmpty ? "this job" : trimmedName)?", isPresented: $confirmingDelete) {
-                            Button("Delete", role: .destructive) { deleteJob() }
-                            Button("Keep", role: .cancel) {}
-                        } message: {
-                            Text(shiftCount == 0
-                                 ? "Its tab goes away."
-                                 : "Its tab and all \(Fmt.count(shiftCount, "shift")) logged for it go away. This can't be undone.")
-                        }
-                    }
+            Group {
+                if choosingTemplate {
+                    templateChooser
+                } else {
+                    form
                 }
             }
-            .scrollDismissesKeyboard(.interactively)
-            .navigationTitle(target.existing == nil ? "New job" : "Edit job")
+            .navigationTitle(navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
-                        .disabled(!canSave)
+                if !choosingTemplate {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Save") { save() }
+                            .disabled(!canSave)
+                    }
                 }
             }
         }
-        .tint(color.color)
+        .tint(choosingTemplate
+              ? (JobColor(rawValue: profileColorRaw) ?? UserProfile.defaultColor).color
+              : color.color)
+    }
+
+    private var navigationTitle: String {
+        if choosingTemplate { return "What kind of work?" }
+        return target.existing == nil ? "New job" : "Edit job"
+    }
+
+    // MARK: - Template step
+
+    /// Eight kinds of work, and a way past them. Picking one fills in the
+    /// whole form; nothing is saved until you press Save on the next screen,
+    /// so a wrong guess costs a tap.
+    private var templateChooser: some View {
+        ScrollView {
+            VStack(spacing: 18) {
+                Text("Pick the closest one and we'll fill in the usual hours, colour and icon. You can change all of it on the next screen.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 8)
+
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 2), spacing: 12) {
+                    ForEach(JobTemplate.all) { template in
+                        Button { apply(template) } label: { tile(template) }
+                            .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 16)
+
+                Button {
+                    apply(JobTemplate.blank)
+                } label: {
+                    Text("Something else")
+                        .font(.subheadline.weight(.medium))
+                        .padding(.vertical, 10)
+                }
+                .padding(.bottom, 24)
+            }
+        }
+        .background(Color(.systemGroupedBackground))
+    }
+
+    private func tile(_ template: JobTemplate) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Image(systemName: template.symbol)
+                .font(.title2)
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+                .background(
+                    LinearGradient(colors: [template.color.color, template.color.gradientEnd],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing),
+                    in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                )
+
+            Text(template.label)
+                .font(.headline)
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+
+            Text(Self.summary(template))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(2, reservesSpace: true)
+                .multilineTextAlignment(.leading)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(Color(.secondarySystemGroupedBackground),
+                    in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+
+    /// "17:00-23:30 - tips" — what the template is actually setting, so the
+    /// tile isn't just a pretty label.
+    private static func summary(_ template: JobTemplate) -> String {
+        var parts = ["\(hhmm(template.checkIn))-\(hhmm(template.checkOut))"]
+        if template.tracksTips { parts.append("tips") }
+        if template.tracksBreaks { parts.append("\(template.breakMinutes)m break") }
+        return parts.joined(separator: " · ")
+    }
+
+    private static func hhmm(_ minutes: Int) -> String {
+        String(format: "%d:%02d", minutes / 60, minutes % 60)
+    }
+
+    private func apply(_ template: JobTemplate) {
+        color = template.color
+        symbol = template.symbol
+        tracksTips = template.tracksTips
+        worksWeekends = template.worksWeekends
+        tracksBreaks = template.tracksBreaks
+        if template.breakMinutes > 0 { breakMinutes = template.breakMinutes }
+        checkIn = Self.date(minutes: template.checkIn)
+        checkOut = Self.date(minutes: template.checkOut)
+        Haptics.tap()
+        withAnimation(.snappy) { choosingTemplate = false }
+    }
+
+    private var form: some View {
+        Form {
+            Section {
+                preview
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+            }
+
+            Section {
+                TextField("e.g. Café, Office, Tutoring", text: $name)
+            } header: {
+                Text("Name")
+            } footer: {
+                Text("Shown on its tab. Emoji welcome.")
+            }
+
+            Section("Colour") {
+                colorGrid
+            }
+
+            Section("Icon") {
+                symbolGrid
+            }
+
+            Section {
+                HStack {
+                    Text("Hourly rate")
+                    Spacer()
+                    TextField("0.00", text: $rateText)
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.trailing)
+                        .monospacedDigit()
+                        .frame(maxWidth: 90)
+                    Text("€/h").foregroundStyle(.secondary)
+                }
+                Toggle("Tips", isOn: $tracksTips)
+            } header: {
+                Text("Pay")
+            } footer: {
+                Text(target.existing == nil
+                     ? "Turn on Tips for a job where you get them — waiting tables, a bar."
+                     : "A new rate applies to shifts you log from now on — ones already logged keep theirs.")
+            }
+
+            Section {
+                DatePicker("Starts", selection: $checkIn, displayedComponents: .hourAndMinute)
+                DatePicker("Ends", selection: $checkOut, displayedComponents: .hourAndMinute)
+                Toggle("Works weekends", isOn: $worksWeekends)
+            } header: {
+                Text("Usual shift")
+            } footer: {
+                Text("New shifts start out with these times. Weekends count toward the month's projection when on.")
+            }
+
+            Section {
+                Toggle("Unpaid break", isOn: $tracksBreaks.animation(.snappy))
+                if tracksBreaks {
+                    Picker("Usually", selection: $breakMinutes) {
+                        ForEach([15, 20, 30, 45, 60], id: \.self) { minutes in
+                            Text("\(minutes) min").tag(minutes)
+                        }
+                    }
+                }
+            } header: {
+                Text("Breaks")
+            } footer: {
+                Text(tracksBreaks
+                     ? "Taken off the hours a shift counts for, and you can change it per shift. Shifts already logged keep the hours they were logged with."
+                     : "Leave off if your break is paid, or if there isn't one. Plenty of jobs don't deduct one.")
+            }
+
+            Section {
+                HStack {
+                    Text("Target")
+                    Spacer()
+                    TextField("None", text: $goalText)
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.trailing)
+                        .monospacedDigit()
+                        .frame(maxWidth: 110)
+                    Text(goalKind.isMoney ? "€" : "h")
+                        .foregroundStyle(.secondary)
+                        .frame(width: 14, alignment: .leading)
+                }
+                Picker("Goal in", selection: $goalKind.animation(.default)) {
+                    ForEach(GoalKind.allCases) { Text($0.rawValue).tag($0) }
+                }
+                .pickerStyle(.segmented)
+            } header: {
+                Text("Monthly goal")
+            } footer: {
+                Text("Shown as progress on the job's tab and its projection. Leave blank for none.")
+            }
+
+            if target.existing != nil {
+                Section {
+                    Button(role: .destructive) {
+                        confirmingDelete = true
+                    } label: {
+                        Label("Delete job", systemImage: "trash")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .alert("Delete \(trimmedName.isEmpty ? "this job" : trimmedName)?", isPresented: $confirmingDelete) {
+                        Button("Delete", role: .destructive) { deleteJob() }
+                        Button("Keep", role: .cancel) {}
+                    } message: {
+                        Text(shiftCount == 0
+                             ? "Its tab goes away."
+                             : "Its tab and all \(Fmt.count(shiftCount, "shift")) logged for it go away. This can't be undone.")
+                    }
+                }
+            }
+        }
+        .scrollDismissesKeyboard(.interactively)
     }
 
     // MARK: - Pieces
@@ -286,11 +423,14 @@ struct JobEditorView: View {
         job.worksWeekends = worksWeekends
         job.defaultCheckInMinutes = Self.minutes(checkIn)
         job.defaultCheckOutMinutes = Self.minutes(checkOut)
+        job.tracksBreaks = tracksBreaks
+        job.defaultBreakMinutes = breakMinutes
 
         job.goalTarget = goal
         job.goalKind = goalKind
 
         try? context.save()
+        Haptics.success()
         if target.existing == nil {
             selectedTab = job.id.uuidString
         }
