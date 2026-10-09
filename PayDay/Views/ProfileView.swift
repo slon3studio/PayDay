@@ -112,6 +112,23 @@ struct ProfileView: View {
                 } footer: {
                     Text("The last \(granularity.limit) \(granularity == .week ? "weeks" : "months") you've worked.")
                 }
+
+                // The one place inside the app that says its own name, so the
+                // icon you tapped and the thing you're looking at line up.
+                Section {
+                    VStack(spacing: 8) {
+                        PayDayMark(size: 44)
+                        Text("PayDay \(Bundle.main.shortVersion)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text("Your shifts stay on your devices.")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .listRowBackground(Color.clear)
+                }
             }
         }
         .listStyle(.insetGrouped)
@@ -157,7 +174,7 @@ struct ProfileView: View {
             }
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -259,7 +276,7 @@ struct ProfileView: View {
                     .foregroundStyle(.secondary)
                 Text(Fmt.money(totalEarnings))
                     .font(.system(.largeTitle, design: .rounded).weight(.bold))
-                    .foregroundStyle(.green)
+                    .foregroundStyle(Palette.money)
                     .contentTransition(.numericText())
                     .minimumScaleFactor(0.6)
                     .lineLimit(1)
@@ -304,7 +321,7 @@ struct ProfileView: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
     }
 
     private var trendChart: some View {
@@ -601,7 +618,7 @@ struct SettingsView: View {
                 Section {
                     LabeledContent {
                         Text(StoreStatus.isSyncing ? "On" : "Off")
-                            .foregroundStyle(StoreStatus.isSyncing ? .green : .orange)
+                            .foregroundStyle(StoreStatus.isSyncing ? Palette.money : Palette.attention)
                     } label: {
                         Label("iCloud sync", systemImage: StoreStatus.isSyncing ? "checkmark.icloud" : "xmark.icloud")
                     }

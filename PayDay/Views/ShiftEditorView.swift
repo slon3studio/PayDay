@@ -191,7 +191,7 @@ struct ShiftEditorView: View {
                     StatRow(label: "Hours", value: Fmt.hours(duration), emphasized: true, tint: job.tint)
                     StatRow(label: "Base pay", value: Fmt.money(duration * rate))
                     if job.tracksTips {
-                        StatRow(label: "Total incl. tips", value: Fmt.money(duration * rate + tipsValue), emphasized: true, tint: .green)
+                        StatRow(label: "Total incl. tips", value: Fmt.money(duration * rate + tipsValue), emphasized: true, tint: Palette.money)
                     }
                 } header: {
                     Text("This shift")

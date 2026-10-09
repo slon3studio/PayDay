@@ -223,10 +223,10 @@ struct AllShiftsView: View {
                     StatRow(label: "Paid \(Fmt.dayInMonth(payment.paidOn))",
                             value: Fmt.money(payment.amount),
                             emphasized: true,
-                            tint: matches ? .green : (delta < 0 ? .orange : .green))
+                            tint: matches ? Palette.money : (delta < 0 ? Palette.attention : Palette.money))
                     HStack(spacing: 4) {
                         Image(systemName: matches ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
-                            .foregroundStyle(matches ? .green : .orange)
+                            .foregroundStyle(matches ? Palette.money : Palette.attention)
                         Text(matches
                              ? "Matches what this month should have paid."
                              : "\(delta < 0 ? "Short" : "Over") by \(Fmt.money(abs(delta))) against \(Fmt.money(month.pay)).")

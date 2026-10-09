@@ -15,12 +15,12 @@ struct WelcomeView: View {
 
     @AppStorage(UserProfile.nameKey) private var name = ""
 
-    private let accent = UserProfile.defaultColor
 
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                mark
+                PayDayMark(size: 104)
+                    .shadow(color: .black.opacity(0.18), radius: 18, y: 8)
                     .padding(.top, 48)
                     .padding(.bottom, 28)
 
@@ -58,7 +58,7 @@ struct WelcomeView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .buttonBorderShape(.roundedRectangle(radius: 16))
-                .tint(accent.color)
+                .tint(Palette.brand)
                 .padding(.horizontal, 24)
 
                 Button {
@@ -68,7 +68,7 @@ struct WelcomeView: View {
                         .font(.subheadline.weight(.medium))
                         .padding(.vertical, 14)
                 }
-                .tint(accent.color)
+                .tint(Palette.brand)
 
                 Text("Nothing leaves your phone except to your own iCloud. No account, no ads.")
                     .font(.caption)
@@ -88,28 +88,11 @@ struct WelcomeView: View {
 
     // MARK: - Pieces
 
-    /// The app's own mark, so the first screen and the icon agree.
-    private var mark: some View {
-        VStack(spacing: 0) {
-            Text("Pay").foregroundStyle(.white)
-            Text("Day").foregroundStyle(Color(white: 0.09))
-        }
-        .font(.system(size: 30, weight: .heavy, design: .rounded))
-        .frame(width: 104, height: 104)
-        .background(
-            LinearGradient(colors: [Color(red: 0.29, green: 0.87, blue: 0.50),
-                                    Color(red: 0.09, green: 0.64, blue: 0.35)],
-                           startPoint: .topLeading, endPoint: .bottomTrailing),
-            in: RoundedRectangle(cornerRadius: 24, style: .continuous)
-        )
-        .shadow(color: .black.opacity(0.18), radius: 18, y: 8)
-    }
-
     private func point(_ symbol: String, _ title: String, _ detail: String) -> some View {
         HStack(alignment: .top, spacing: 16) {
             Image(systemName: symbol)
                 .font(.title3)
-                .foregroundStyle(accent.color)
+                .foregroundStyle(Palette.brand)
                 .frame(width: 30)
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)

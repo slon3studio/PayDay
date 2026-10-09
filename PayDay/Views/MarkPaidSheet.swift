@@ -110,7 +110,7 @@ struct MarkPaidSheet: View {
     private var isMatch: Bool { abs(difference) < 0.01 }
 
     private var differenceTint: Color {
-        isMatch ? .green : (difference < 0 ? .orange : .green)
+        isMatch ? Palette.money : (difference < 0 ? Palette.attention : Palette.money)
     }
 
     private var differenceExplanation: String {

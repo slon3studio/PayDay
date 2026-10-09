@@ -293,7 +293,7 @@ struct ShiftRow: View {
             Text(Fmt.money(shift.totalPay))
                 .font(.callout.weight(.semibold))
                 .monospacedDigit()
-                .foregroundStyle(.green)
+                .foregroundStyle(Palette.money)
         }
         .padding(.vertical, 2)
         .contentShape(Rectangle())
@@ -387,7 +387,7 @@ struct MonthHeroCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             LinearGradient(colors: [job.tint, job.gradientEnd], startPoint: .topLeading, endPoint: .bottomTrailing),
-            in: RoundedRectangle(cornerRadius: 22, style: .continuous)
+            in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous)
         )
     }
 
@@ -454,7 +454,7 @@ struct WeekStrip: View {
             }
         }
         .padding(14)
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
     }
 
     private func cell(_ day: Date, shifts: [Shift]) -> some View {
@@ -481,11 +481,11 @@ struct WeekStrip: View {
             .padding(.vertical, 8)
             .background(
                 worked ? AnyShapeStyle(job.tint) : AnyShapeStyle(Color(.tertiarySystemFill)),
-                in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                in: RoundedRectangle(cornerRadius: Palette.tileRadius, style: .continuous)
             )
             .overlay {
                 if isToday {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: Palette.tileRadius, style: .continuous)
                         .strokeBorder(worked ? Color.primary.opacity(0.35) : job.tint, lineWidth: 2)
                 }
             }
@@ -520,7 +520,7 @@ struct RepeatCard: View {
             loggedToday(today)
                 .padding(14)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
         } else if let last = lastShift {
             Button(action: onRepeat) {
                 // Plain text, not a Label: the button hides the icon but keeps
@@ -540,7 +540,7 @@ struct RepeatCard: View {
         HStack(spacing: 10) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.title2)
-                .foregroundStyle(.green)
+                .foregroundStyle(Palette.money)
             VStack(alignment: .leading, spacing: 2) {
                 Text("Logged today")
                     .font(.headline)

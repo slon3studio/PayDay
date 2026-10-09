@@ -35,6 +35,7 @@
 		ED7D318E887CA581D2D560E6 /* ShiftStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56FF335BEC8B462DF596272C /* ShiftStats.swift */; };
 		EF868715D0FB86AD8DAAA2B5 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 442FDF6C414B104C38825721 /* ProfileView.swift */; };
 		F715B3C3FE180A05C2EFBE88 /* AllShiftsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB01E525C986A901FBFA12FD /* AllShiftsView.swift */; };
+		F7A73EC588CBD5A1CBEE3EFD /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89801A45003EDB7A0F9CF007 /* Palette.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -53,6 +54,7 @@
 		700B3ADB7A9173C66820F12A /* JobView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobView.swift; sourceTree = "<group>"; };
 		7E48D0C158949C1A3921A2C6 /* Formatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formatters.swift; sourceTree = "<group>"; };
 		83B6A10F3EEE12254397EA6D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		89801A45003EDB7A0F9CF007 /* Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Palette.swift; sourceTree = "<group>"; };
 		8C206FD3435F9D00E317A9AF /* PreviewData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewData.swift; sourceTree = "<group>"; };
 		96AECD55230B142A242C318C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AB01E525C986A901FBFA12FD /* AllShiftsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllShiftsView.swift; sourceTree = "<group>"; };
@@ -133,6 +135,7 @@
 				7E48D0C158949C1A3921A2C6 /* Formatters.swift */,
 				CA4791D081C0E07C1CF403B6 /* Haptics.swift */,
 				CDC9CE014DC8CC4812A3DF0A /* KeyboardDismiss.swift */,
+				89801A45003EDB7A0F9CF007 /* Palette.swift */,
 				8C206FD3435F9D00E317A9AF /* PreviewData.swift */,
 				5B7DCEABF2E51F0DB4C636CB /* TimesheetExport.swift */,
 			);
@@ -271,6 +274,7 @@
 				C93A807896020D54256EFAF8 /* MonthHeatmap.swift in Sources */,
 				9E46D3F943BB5730B59E4EC9 /* MonthPayment.swift in Sources */,
 				0DDD8D2E40BB08BEA84B6918 /* MonthlyGoal.swift in Sources */,
+				F7A73EC588CBD5A1CBEE3EFD /* Palette.swift in Sources */,
 				92B6DD3B79BC484B447D9FE8 /* PayDayApp.swift in Sources */,
 				9F708C2D55BD69A246758E0C /* PreviewData.swift in Sources */,
 				EF868715D0FB86AD8DAAA2B5 /* ProfileView.swift in Sources */,

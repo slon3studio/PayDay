@@ -39,7 +39,9 @@ struct ProjectionCard: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(Fmt.money(projection.projectedTotal))
                             .font(.system(.largeTitle, design: .rounded).weight(.bold))
-                            .foregroundStyle(job.tint)
+                            // Money is green wherever it appears, even on a
+                            // card belonging to a job of another colour.
+                            .foregroundStyle(Palette.money)
                             .contentTransition(.numericText())
                             .minimumScaleFactor(0.6)
                             .lineLimit(1)
@@ -92,7 +94,7 @@ struct ProjectionCard: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
     }
 
     // MARK: - Goal
@@ -114,7 +116,7 @@ struct ProjectionCard: View {
 
             HStack(spacing: 4) {
                 Image(systemName: willMake ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
-                    .foregroundStyle(willMake ? .green : .orange)
+                    .foregroundStyle(willMake ? Palette.money : Palette.attention)
                 Text(willMake
                      ? "On track — projected to clear it by \(goalText(gap))."
                      : "Projected to fall \(goalText(gap)) short.")

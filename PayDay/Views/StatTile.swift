@@ -29,7 +29,7 @@ struct StatTile: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
-        .background(background, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(background, in: RoundedRectangle(cornerRadius: Palette.tileRadius, style: .continuous))
     }
 }
 
