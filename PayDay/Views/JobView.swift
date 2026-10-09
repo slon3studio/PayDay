@@ -138,14 +138,6 @@ struct JobView: View {
                 }
 
                 Section {
-                    JobProjection(job: job, shifts: jobShifts)
-                        .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
-                        .listRowBackground(Color.clear)
-                } header: {
-                    SectionHeader("Projected · \(Fmt.monthTitle(.now))")
-                }
-
-                Section {
                     viewAllLink
                     NavigationLink {
                         TimesheetView(job: job, month: Calendar.current.startOfMonth(for: .now))
@@ -484,6 +476,9 @@ struct WeekStrip: View {
     /// Weeks away from this one. Negative is the past, positive the future —
     /// which is how you reach a day you haven't worked yet.
     @State private var offset = 0
+    /// A week at a time, or the whole month laid out. The week is the default
+    /// because it's what you act on; the month is for seeing the shape of it.
+    @AppStorage("stripShowsMonth") private var showsMonth = false
 
     /// How far either way you can page. Two years covers anything useful and
     /// keeps the pager from building an unbounded number of pages.
@@ -505,6 +500,14 @@ struct WeekStrip: View {
 
     /// "This week", "Next week", or the dates when it's further out.
     private var title: String {
+        if showsMonth {
+            switch offset {
+            case 0: return "This month"
+            case 1: return "Next month"
+            case -1: return "Last month"
+            default: return Fmt.monthTitle(monthStart(offset))
+            }
+        }
         switch offset {
         case 0: return "This week"
         case 1: return "Next week"
@@ -519,9 +522,21 @@ struct WeekStrip: View {
         }
     }
 
-    private var weekHours: Double {
-        let week = Set(days)
-        return shifts.filter { week.contains($0.day) }.reduce(0) { $0 + $1.hours }
+    /// Start of the month `step` months from this one.
+    private func monthStart(_ step: Int) -> Date {
+        let thisMonth = calendar.dateInterval(of: .month, for: .now)?.start ?? .now
+        return calendar.date(byAdding: .month, value: step, to: thisMonth) ?? thisMonth
+    }
+
+    /// Hours in whichever span is on screen.
+    private var spanHours: Double {
+        let span: Set<Date>
+        if showsMonth {
+            span = Set(monthCells(offset).compactMap { $0 })
+        } else {
+            span = Set(days)
+        }
+        return shifts.filter { span.contains($0.day) }.reduce(0) { $0 + $1.hours }
     }
 
     var body: some View {
@@ -534,7 +549,7 @@ struct WeekStrip: View {
                         .font(.headline)
                         .contentTransition(.numericText())
                     if offset != 0 {
-                        Button("Back to this week") {
+                        Button(showsMonth ? "Back to this month" : "Back to this week") {
                             withAnimation(.snappy) { offset = 0 }
                         }
                         .font(.caption2)
@@ -545,31 +560,93 @@ struct WeekStrip: View {
 
                 Spacer()
 
-                Text(Fmt.hours(weekHours))
+                Text(Fmt.hours(spanHours))
                     .font(.subheadline.weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(job.tint)
                     .contentTransition(.numericText())
 
                 step(1, "chevron.right")
+
+                Button {
+                    withAnimation(.snappy) {
+                        showsMonth.toggle()
+                        offset = 0
+                    }
+                } label: {
+                    Image(systemName: showsMonth ? "chevron.up" : "chevron.down")
+                        .font(.footnote.weight(.bold))
+                        .foregroundStyle(job.tint)
+                        .frame(width: 28, height: 28)
+                        .background(job.tint.opacity(0.12), in: Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(showsMonth ? "Show the week" : "Show the month")
             }
 
             TabView(selection: $offset) {
-                ForEach(Array(Self.range), id: \.self) { week in
-                    HStack(spacing: 6) {
-                        ForEach(days(week), id: \.self) { day in
-                            cell(day, shifts: shifts(on: day))
+                ForEach(Array(Self.range), id: \.self) { step in
+                    Group {
+                        if showsMonth {
+                            monthGrid(step)
+                        } else {
+                            HStack(spacing: 6) {
+                                ForEach(days(step), id: \.self) { day in
+                                    cell(day, shifts: shifts(on: day))
+                                }
+                            }
                         }
                     }
-                    .frame(maxHeight: .infinity, alignment: .top)
-                    .tag(week)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .tag(step)
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
-            .frame(height: 68)
+            .frame(height: showsMonth ? 320 : 68)
         }
         .padding(14)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+    }
+
+    /// Leading blanks so the 1st lands under the right weekday.
+    private func monthCells(_ step: Int) -> [Date?] {
+        let month = monthStart(step)
+        guard let count = calendar.range(of: .day, in: .month, for: month)?.count else { return [] }
+        let weekday = calendar.component(.weekday, from: month)
+        let lead = (weekday - calendar.firstWeekday + 7) % 7
+        var cells: [Date?] = Array(repeating: nil, count: lead)
+        for offset in 0..<count {
+            cells.append(calendar.date(byAdding: .day, value: offset, to: month))
+        }
+        return cells
+    }
+
+    private func monthGrid(_ step: Int) -> some View {
+        let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
+        return VStack(spacing: 6) {
+            LazyVGrid(columns: columns, spacing: 6) {
+                ForEach(Array(weekdaySymbols.enumerated()), id: \.offset) { _, symbol in
+                    Text(symbol)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            LazyVGrid(columns: columns, spacing: 6) {
+                ForEach(Array(monthCells(step).enumerated()), id: \.offset) { _, day in
+                    if let day {
+                        cell(day, shifts: shifts(on: day), compact: true)
+                    } else {
+                        Color.clear.frame(height: 40)
+                    }
+                }
+            }
+        }
+    }
+
+    private var weekdaySymbols: [String] {
+        let symbols = calendar.veryShortWeekdaySymbols
+        let shift = calendar.firstWeekday - 1
+        return Array(symbols[shift...] + symbols[..<shift])
     }
 
     private func shifts(on day: Date) -> [Shift] {
@@ -590,7 +667,7 @@ struct WeekStrip: View {
         .accessibilityLabel(by > 0 ? "Next week" : "Previous week")
     }
 
-    private func cell(_ day: Date, shifts: [Shift]) -> some View {
+    private func cell(_ day: Date, shifts: [Shift], compact: Bool = false) -> some View {
         let hours = shifts.reduce(0) { $0 + $1.hours }
         let planned = !shifts.isEmpty && shifts.allSatisfy(\.isPlanned)
         let worked = !shifts.isEmpty && !planned
@@ -599,20 +676,23 @@ struct WeekStrip: View {
         return Button {
             onSelect(day, shifts)
         } label: {
-            VStack(spacing: 3) {
-                Text(day.formatted(.dateTime.weekday(.narrow)))
-                    .font(.caption2.weight(.medium))
-                    .opacity(worked ? 0.85 : 0.6)
+            VStack(spacing: compact ? 1 : 3) {
+                if !compact {
+                    Text(day.formatted(.dateTime.weekday(.narrow)))
+                        .font(.caption2.weight(.medium))
+                        .opacity(worked ? 0.85 : 0.6)
+                }
                 Text(day.formatted(.dateTime.day()))
-                    .font(.callout.weight(.semibold))
+                    .font(compact ? .caption.weight(.semibold) : .callout.weight(.semibold))
                     .monospacedDigit()
                 Text(shifts.isEmpty ? "+" : Self.compactHours(hours))
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(.system(size: compact ? 9 : 10, weight: .semibold))
                     .opacity(shifts.isEmpty ? 0.4 : 0.9)
             }
             .foregroundStyle(worked ? Color.white : (planned ? job.tint : .primary))
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
+            .frame(height: compact ? 40 : nil)
+            .padding(.vertical, compact ? 0 : 8)
             .background(
                 worked ? AnyShapeStyle(job.tint)
                        : AnyShapeStyle(planned ? job.tint.opacity(0.10) : Color(.tertiarySystemFill)),
@@ -762,35 +842,3 @@ struct PlannedRow: View {
         .padding(.vertical, 2)
     }
 }
-
-struct JobProjection: View {
-    let job: Job
-    let shifts: [Shift]
-
-    @AppStorage private var basisRaw: String
-
-    init(job: Job, shifts: [Shift]) {
-        self.job = job
-        self.shifts = shifts
-        let fallback: ProjectionBasis = job.worksWeekends ? .pattern : .weekdays
-        _basisRaw = AppStorage(wrappedValue: fallback.rawValue, job.projectionBasisKey)
-    }
-
-    private var basis: Binding<ProjectionBasis> {
-        Binding(
-            get: { ProjectionBasis(rawValue: basisRaw) ?? .weekdays },
-            set: { basisRaw = $0.rawValue }
-        )
-    }
-
-    var body: some View {
-        ProjectionCard(
-            projection: StatsEngine.projection(for: job, allShiftsForJob: shifts, basis: basis.wrappedValue),
-            basis: basis
-        )
-    }
-}
-
-// MARK: - Your profile
-
-/// Your emoji, or your initials when there's no emoji, on your colour.

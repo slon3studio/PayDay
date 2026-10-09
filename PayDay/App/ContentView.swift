@@ -33,8 +33,10 @@ struct ContentView: View {
     }
 
     /// A tab is coloured by what it's about: a job's tab by that job, Profile
-    /// by the app. Money stays green throughout either way, so the one figure
-    /// that means the same thing everywhere always looks the same.
+    /// by you. Nothing inside a tab overrides it, which is what went wrong
+    /// before — a purple card under a green gear read as two screens. Money
+    /// stays green throughout, so the one figure that means the same thing
+    /// everywhere always looks the same.
     private var tabTint: Color {
         jobs.first { $0.id.uuidString == selection.wrappedValue }?.tint
             ?? (JobColor(rawValue: profileColorRaw) ?? UserProfile.defaultColor).color
@@ -67,7 +69,6 @@ struct ContentView: View {
             }
 
             ProfileView()
-                .tint(Palette.brand)
                 .tag(Self.profileTag)
                 .tabItem { Label("Profile", systemImage: "person.crop.circle") }
         }

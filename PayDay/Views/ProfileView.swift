@@ -94,8 +94,6 @@ struct ProfileView: View {
                     .listRowBackground(Color.clear)
             }
 
-            jobsSection
-
             if !allShifts.isEmpty {
                 Section {
                     outlookCard
@@ -103,10 +101,17 @@ struct ProfileView: View {
                         .listRowBackground(Color.clear)
                 } header: {
                     SectionHeader("Outlook · \(Fmt.monthTitle(.now))")
-                } footer: {
-                    Text(jobs.count > 1
-                         ? "Every job added together. Each one's own projection is on its tab."
-                         : "The full projection, with its settings, is on the job's tab.")
+                }
+
+                Section {
+                    ForEach(jobs) { job in
+                        JobProjection(job: job, shifts: shifts(of: job))
+                            .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                    }
+                } header: {
+                    SectionHeader(jobs.count > 1 ? "By job" : "Detail")
                 }
 
                 Section {
@@ -116,15 +121,15 @@ struct ProfileView: View {
                 } footer: {
                     Text("The last \(granularity.limit) \(granularity == .week ? "weeks" : "months") you've worked.")
                 }
-
             }
+
+            jobsSection
         }
         .listStyle(.insetGrouped)
         .listSectionSpacing(.compact)
         .scrollBounceBehavior(.basedOnSize)
         // Only the jobs list is movable; this is what shows its drag handles.
         .environment(\.editMode, $editMode)
-        .tint(Palette.brand)
     }
 
     // MARK: - You
@@ -305,7 +310,7 @@ struct ProfileView: View {
                     // Arrows as well as the drag handle: a drag is easy to
                     // miss on a small list, a tap isn't.
                     HStack(spacing: 12) {
-                        JobRow(job: job, shiftCount: shifts(of: job).count, monthEarnings: monthEarnings(of: job), showsChevron: false)
+                        JobRow(job: job, shiftCount: shifts(of: job).count, showsChevron: false)
                         Button {
                             withAnimation { moveJobs(from: IndexSet(integer: index), to: index - 1) }
                         } label: {
@@ -327,7 +332,7 @@ struct ProfileView: View {
                     Button {
                         jobEditor = .edit(job)
                     } label: {
-                        JobRow(job: job, shiftCount: shifts(of: job).count, monthEarnings: monthEarnings(of: job))
+                        JobRow(job: job, shiftCount: shifts(of: job).count)
                     }
                     .buttonStyle(.plain)
                 }
@@ -342,7 +347,7 @@ struct ProfileView: View {
             }
         } header: {
             HStack {
-                Text("Jobs")
+                SectionHeader("Jobs")
                 Spacer()
                 if jobs.count > 1 {
                     Button(editMode.isEditing ? "Done" : "Reorder") {
@@ -420,7 +425,6 @@ struct ProfileView: View {
 private struct JobRow: View {
     let job: Job
     let shiftCount: Int
-    let monthEarnings: Double
     var showsChevron = true
 
     var body: some View {
@@ -444,18 +448,6 @@ private struct JobRow: View {
             }
 
             Spacer(minLength: 8)
-
-            if monthEarnings > 0 {
-                VStack(alignment: .trailing, spacing: 1) {
-                    Text(Fmt.money(monthEarnings))
-                        .font(.subheadline.weight(.semibold))
-                        .monospacedDigit()
-                        .foregroundStyle(Palette.money)
-                    Text("this month")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                }
-            }
 
             if showsChevron {
                 Image(systemName: "chevron.right")
@@ -771,6 +763,11 @@ struct SettingsView: View {
 
     @AppStorage(Appearance.key) private var appearanceRaw: String = Appearance.system.rawValue
     @AppStorage(AppSettings.currencyKey) private var currencyCode = AppSettings.deviceDefault
+    @AppStorage(UserProfile.colorKey) private var colorRaw = UserProfile.defaultColor.rawValue
+
+    private var accent: Color {
+        (JobColor(rawValue: colorRaw) ?? UserProfile.defaultColor).color
+    }
 
     var body: some View {
         NavigationStack {
@@ -793,7 +790,7 @@ struct SettingsView: View {
                 }
             }
         }
-        .tint(Palette.brand)
+        .tint(accent)
     }
 
     // MARK: - Cards
@@ -899,3 +896,35 @@ struct SettingsView: View {
             .padding(.top, 2)
     }
 }
+
+struct JobProjection: View {
+    let job: Job
+    let shifts: [Shift]
+
+    @AppStorage private var basisRaw: String
+
+    init(job: Job, shifts: [Shift]) {
+        self.job = job
+        self.shifts = shifts
+        let fallback: ProjectionBasis = job.worksWeekends ? .pattern : .weekdays
+        _basisRaw = AppStorage(wrappedValue: fallback.rawValue, job.projectionBasisKey)
+    }
+
+    private var basis: Binding<ProjectionBasis> {
+        Binding(
+            get: { ProjectionBasis(rawValue: basisRaw) ?? .weekdays },
+            set: { basisRaw = $0.rawValue }
+        )
+    }
+
+    var body: some View {
+        ProjectionCard(
+            projection: StatsEngine.projection(for: job, allShiftsForJob: shifts, basis: basis.wrappedValue),
+            basis: basis
+        )
+    }
+}
+
+// MARK: - Your profile
+
+/// Your emoji, or your initials when there's no emoji, on your colour.
