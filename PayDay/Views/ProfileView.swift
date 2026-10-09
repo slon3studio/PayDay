@@ -13,7 +13,6 @@ struct ProfileView: View {
     @AppStorage(UserProfile.nameKey) private var name = ""
     @AppStorage(UserProfile.roleKey) private var role = ""
     @AppStorage(UserProfile.emojiKey) private var emoji = ""
-    @AppStorage(UserProfile.colorKey) private var colorRaw = UserProfile.defaultColor.rawValue
 
     @State private var granularity: Granularity = .month
     @State private var metric: ProfileMetric = .hours
@@ -22,7 +21,6 @@ struct ProfileView: View {
     @State private var jobEditor: JobEditorTarget?
     @State private var editMode: EditMode = .inactive
 
-    private var profileColor: JobColor { JobColor(rawValue: colorRaw) ?? UserProfile.defaultColor }
 
     enum Granularity: String, CaseIterable, Identifiable {
         case week = "Weekly"
@@ -121,7 +119,7 @@ struct ProfileView: View {
         .scrollBounceBehavior(.basedOnSize)
         // Only the jobs list is movable; this is what shows its drag handles.
         .environment(\.editMode, $editMode)
-        .tint(profileColor.color)
+        .tint(Palette.brand)
     }
 
     // MARK: - You
@@ -136,7 +134,7 @@ struct ProfileView: View {
                 editingProfile = true
             } label: {
                 HStack(spacing: 12) {
-                    ProfileAvatar(emoji: emoji, name: name, color: profileColor, size: 46, onColour: true)
+                    ProfileAvatar(emoji: emoji, name: name, size: 46, onColour: true)
                         .overlay(Circle().strokeBorder(.white.opacity(0.85), lineWidth: 2))
 
                     VStack(alignment: .leading, spacing: 1) {
@@ -180,11 +178,8 @@ struct ProfileView: View {
         .foregroundStyle(.white)
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            LinearGradient(colors: [profileColor.color, profileColor.gradientEnd],
-                           startPoint: .topLeading, endPoint: .bottomTrailing),
-            in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous)
-        )
+        .background(Palette.brandGradient,
+                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
     }
 
     /// What goes under the name: the role if there is one, otherwise how long
@@ -508,7 +503,6 @@ private struct JobProjection: View {
 struct ProfileAvatar: View {
     let emoji: String
     let name: String
-    let color: JobColor
     var size: CGFloat = 60
     /// Sitting on a coloured card rather than a grey one.
     var onColour = false
@@ -538,8 +532,7 @@ struct ProfileAvatar: View {
                 if onColour {
                     Circle().fill(.white.opacity(0.22))
                 } else {
-                    Circle().fill(LinearGradient(colors: [color.color, color.gradientEnd],
-                                                 startPoint: .topLeading, endPoint: .bottomTrailing))
+                    Circle().fill(Palette.brandGradient)
                 }
             }
     }
@@ -559,9 +552,7 @@ struct ProfileEditorView: View {
     @AppStorage(UserProfile.nameKey) private var name = ""
     @AppStorage(UserProfile.roleKey) private var role = ""
     @AppStorage(UserProfile.emojiKey) private var emoji = ""
-    @AppStorage(UserProfile.colorKey) private var colorRaw = UserProfile.defaultColor.rawValue
 
-    private var color: JobColor { JobColor(rawValue: colorRaw) ?? UserProfile.defaultColor }
 
     /// Kept short and even-tempered. The long list was the problem.
     private static let emojis = ["🙂", "😎", "🧑‍💻", "🧑‍🍳", "🎧", "☕️", "📚", "⚡️"]
@@ -591,11 +582,10 @@ struct ProfileEditorView: View {
 
                 Section {
                     avatarRow
-                    colourRow
                 } header: {
-                    SectionHeader("Appearance")
+                    SectionHeader("Avatar")
                 } footer: {
-                    Text("Your colour tints the Profile tab.")
+                    Text("Shown wherever the app refers to you. Pick your initials to go without one.")
                 }
 
                 if !allShifts.isEmpty {
@@ -619,14 +609,14 @@ struct ProfileEditorView: View {
                 }
             }
         }
-        .tint(color.color)
+        .tint(Palette.brand)
     }
 
     // MARK: - Pieces
 
     private var header: some View {
         VStack(spacing: 10) {
-            ProfileAvatar(emoji: emoji, name: name, color: color, size: 88)
+            ProfileAvatar(emoji: emoji, name: name, size: 88)
             VStack(spacing: 2) {
                 Text(name.isEmpty ? "Your name" : name)
                     .font(.title2.weight(.bold))
@@ -641,16 +631,12 @@ struct ProfileEditorView: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 20)
         .animation(.snappy, value: emoji)
-        .animation(.snappy, value: colorRaw)
     }
 
     /// Each option drawn as the avatar it would produce, so the row is a
     /// preview rather than a list of characters.
     private var avatarRow: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Avatar")
-                .font(.subheadline)
-
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     swatch(isSelected: emoji.isEmpty) {
@@ -684,43 +670,12 @@ struct ProfileEditorView: View {
         Button(action: action) {
             content()
                 .frame(width: 44, height: 44)
-                .background(
-                    LinearGradient(colors: [color.color, color.gradientEnd],
-                                   startPoint: .topLeading, endPoint: .bottomTrailing),
-                    in: Circle()
-                )
+                .background(Palette.brandGradient, in: Circle())
                 .overlay(Circle().strokeBorder(Color.primary.opacity(isSelected ? 0.9 : 0), lineWidth: 2))
                 .padding(2)
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
-    }
-
-    private var colourRow: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Colour")
-                .font(.subheadline)
-
-            HStack(spacing: 0) {
-                ForEach(JobColor.allCases) { option in
-                    Button {
-                        colorRaw = option.rawValue
-                    } label: {
-                        Circle()
-                            .fill(option.color)
-                            .frame(width: 26, height: 26)
-                            .overlay(Circle().strokeBorder(.background, lineWidth: option == color ? 2 : 0))
-                            .overlay(Circle().strokeBorder(Color.primary.opacity(option == color ? 0.9 : 0), lineWidth: 2)
-                                .padding(-3))
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(option.label)
-                    .accessibilityAddTraits(option == color ? .isSelected : [])
-                }
-            }
-        }
-        .padding(.vertical, 4)
     }
 
     private var initials: String {

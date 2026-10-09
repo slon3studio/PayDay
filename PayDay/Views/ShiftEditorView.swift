@@ -166,7 +166,7 @@ struct ShiftEditorView: View {
                 }
             }
         }
-        .tint(job.tint)
+        .tint(Palette.brand)
     }
 
 

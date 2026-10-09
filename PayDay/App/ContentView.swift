@@ -10,7 +10,6 @@ struct ContentView: View {
     /// it — and so the job editor can switch to a job it just created.
     @AppStorage("selectedTab") private var selectedTab = ""
     @AppStorage(Appearance.key) private var appearanceRaw: String = Appearance.system.rawValue
-    @AppStorage(UserProfile.colorKey) private var profileColorRaw = UserProfile.defaultColor.rawValue
     /// Not read here on purpose. Holding it at the root means changing the
     /// currency in Settings invalidates the whole tab tree, so every amount
     /// below redraws in the new one.
@@ -32,11 +31,6 @@ struct ContentView: View {
         )
     }
 
-    private var tint: Color {
-        jobs.first { $0.id.uuidString == selection.wrappedValue }?.tint
-            ?? (JobColor(rawValue: profileColorRaw) ?? UserProfile.defaultColor).color
-    }
-
     var body: some View {
         Group {
             // With no jobs there is nothing for the tabs to show, and Profile
@@ -48,7 +42,9 @@ struct ContentView: View {
             }
         }
         .animation(.snappy, value: jobs.isEmpty)
-        .tint(tint)
+        // Never the selected job's colour. The chrome is the app; the
+        // colours belong to what's in it.
+        .tint(Palette.brand)
         .fontDesign(.rounded)
         .preferredColorScheme(Appearance(rawValue: appearanceRaw)?.colorScheme)
         // One recognizer on the window covers every screen, so tapping away

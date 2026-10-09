@@ -69,7 +69,7 @@ struct MarkPaidSheet: View {
                 Button("Keep", role: .cancel) {}
             }
         }
-        .tint(job.tint)
+        .tint(Palette.brand)
     }
 
     // MARK: - Cards

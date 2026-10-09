@@ -531,7 +531,7 @@ struct RepeatCard: View {
             }
             .buttonStyle(.borderedProminent)
             .buttonBorderShape(.roundedRectangle(radius: 16))
-            .tint(job.tint)
+            .tint(Palette.brand)
         }
     }
 
@@ -552,7 +552,7 @@ struct RepeatCard: View {
             if let onUndo {
                 Button("Undo", action: onUndo)
                     .buttonStyle(.bordered)
-                    .tint(job.tint)
+                    .tint(Palette.brand)
             }
         }
     }

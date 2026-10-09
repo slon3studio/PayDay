@@ -30,7 +30,6 @@ struct JobEditorView: View {
 
     /// Shared with `ContentView`, so a new job opens on its own tab.
     @AppStorage("selectedTab") private var selectedTab = ""
-    @AppStorage(UserProfile.colorKey) private var profileColorRaw = UserProfile.defaultColor.rawValue
 
     @State private var name: String
     @State private var color: JobColor
@@ -110,9 +109,7 @@ struct JobEditorView: View {
                 }
             }
         }
-        .tint(choosingTemplate
-              ? (JobColor(rawValue: profileColorRaw) ?? UserProfile.defaultColor).color
-              : color.color)
+        .tint(Palette.brand)
     }
 
     private var navigationTitle: String {

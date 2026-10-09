@@ -7,11 +7,12 @@ enum UserProfile {
     static let roleKey = "profileRole"
     /// Shown in the avatar instead of initials. Empty means initials.
     static let emojiKey = "profileEmoji"
-    /// The profile's own colour — the avatar and the Profile tab.
-    static let colorKey = "profileColor"
-    /// The app icon's green, so a fresh profile matches the icon it was
-    /// opened from. Changeable in the profile editor like any other.
-    static let defaultColor = JobColor.green
+    // There was a profile colour here, and it was the one piece of
+    // customisation that bought nothing. It recoloured the Profile tab and
+    // Settings and left the rest of the app green, so which tab you were on
+    // decided what the app looked like. PayDay's chrome is PayDay's colour
+    // now, always. Job colours remain, because telling two jobs apart at a
+    // glance is work worth doing.
     static let startedKey = "profileStarted"
 
     static var name: String {
