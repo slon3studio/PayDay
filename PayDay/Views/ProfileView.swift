@@ -114,22 +114,6 @@ struct ProfileView: View {
                     Text("The last \(granularity.limit) \(granularity == .week ? "weeks" : "months") you've worked.")
                 }
 
-                // The one place inside the app that says its own name, so the
-                // icon you tapped and the thing you're looking at line up.
-                Section {
-                    VStack(spacing: 8) {
-                        PayDayMark(size: 44)
-                        Text("PayDay \(Bundle.main.shortVersion)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text("Your shifts stay on your devices.")
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .listRowBackground(Color.clear)
-                }
             }
         }
         .listStyle(.insetGrouped)
@@ -744,6 +728,12 @@ struct ProfileEditorView: View {
     }
 }
 
+/// Settings is about the app; the profile card is about you.
+///
+/// That line decides what lives where. How amounts are shown, which theme,
+/// whether iCloud is running and what version this is are all facts about
+/// PayDay. Your name, what you do, your avatar and what you have earned are
+/// facts about you, and live one tap into the profile card instead.
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
 
@@ -752,43 +742,17 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    Picker("Theme", selection: $appearanceRaw) {
-                        ForEach(Appearance.allCases) { Text($0.rawValue).tag($0.rawValue) }
-                    }
-                    .pickerStyle(.segmented)
-                } header: {
-                    SectionHeader("Appearance")
+            ScrollView {
+                VStack(spacing: 16) {
+                    displayCard
+                    syncCard
+                    aboutCard
                 }
-
-                Section {
-                    Picker("Currency", selection: $currencyCode) {
-                        ForEach(AppSettings.currencies, id: \.self) { code in
-                            Text("\(code) · \(AppSettings.name(for: code))").tag(code)
-                        }
-                    }
-                } header: {
-                    SectionHeader("Currency")
-                } footer: {
-                    Text("Changes how every amount is shown. Nothing already logged is converted — the numbers stay as you entered them.")
-                }
-
-                Section {
-                    LabeledContent {
-                        Text(StoreStatus.isSyncing ? "On" : "Off")
-                            .foregroundStyle(StoreStatus.isSyncing ? Palette.money : Palette.attention)
-                    } label: {
-                        Label("iCloud sync", systemImage: StoreStatus.isSyncing ? "checkmark.icloud" : "xmark.icloud")
-                    }
-                } header: {
-                    SectionHeader("Sync")
-                } footer: {
-                    Text(StoreStatus.isSyncing
-                         ? "Your jobs and shifts are kept on every device signed in to the same Apple Account."
-                         : "This phone couldn't reach iCloud, so everything is being kept here only. Nothing is lost — check that you're signed in and that iCloud Drive is on, then reopen PayDay.")
-                }
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 32)
             }
+            .background(Color(.systemGroupedBackground))
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -797,10 +761,109 @@ struct SettingsView: View {
                 }
             }
         }
+        .tint(Palette.brand)
     }
-}
 
-#Preview {
-    ProfileView()
-        .modelContainer(PreviewData.container)
+    // MARK: - Cards
+
+    private var displayCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            cardTitle("Display")
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Theme")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Picker("Theme", selection: $appearanceRaw) {
+                    ForEach(Appearance.allCases) { Text($0.rawValue).tag($0.rawValue) }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 14)
+
+            Divider().padding(.leading, 16)
+
+            HStack {
+                Label("Currency", systemImage: "coloncurrencysign.circle")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Picker("", selection: $currencyCode) {
+                    ForEach(AppSettings.currencies, id: \.self) { code in
+                        Text("\(code) · \(AppSettings.name(for: code))").tag(code)
+                    }
+                }
+                .labelsHidden()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+
+            footnote("Changes how every amount is shown. Nothing already logged is converted — the numbers stay as you entered them.")
+        }
+        .background(Color(.secondarySystemGroupedBackground),
+                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+    }
+
+    private var syncCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            cardTitle("iCloud")
+
+            HStack(spacing: 12) {
+                SymbolTile(symbol: StoreStatus.isSyncing ? "checkmark.icloud.fill" : "xmark.icloud.fill",
+                           colour: StoreStatus.isSyncing ? Palette.money : Palette.attention,
+                           size: 36)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(StoreStatus.isSyncing ? "Syncing" : "This phone only")
+                        .font(.body.weight(.medium))
+                    Text(StoreStatus.isSyncing ? "Every device on your Apple Account" : "iCloud couldn't be reached")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 12)
+
+            footnote(StoreStatus.isSyncing
+                     ? "Your jobs and shifts are kept in your own private iCloud. Nobody else can read them — not even us."
+                     : "Nothing is lost. Check that you're signed in to iCloud and that iCloud Drive is on, then reopen PayDay.")
+        }
+        .background(Color(.secondarySystemGroupedBackground),
+                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+    }
+
+    private var aboutCard: some View {
+        VStack(spacing: 10) {
+            PayDayMark(size: 52)
+            Text("PayDay \(Bundle.main.shortVersion)")
+                .font(.system(.subheadline, design: .rounded).weight(.semibold))
+            Text("No account. No ads. No tracking.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 22)
+        .background(Color(.secondarySystemGroupedBackground),
+                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+    }
+
+    private func cardTitle(_ text: String) -> some View {
+        SectionHeader(text)
+            .padding(.horizontal, 16)
+            .padding(.top, 14)
+            .padding(.bottom, 10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func footnote(_ text: String) -> some View {
+        Text(text)
+            .font(.caption)
+            .foregroundStyle(.tertiary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 14)
+            .padding(.top, 2)
+    }
 }

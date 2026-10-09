@@ -37,54 +37,18 @@ struct MarkPaidSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    HStack {
-                        Text("Amount received")
-                        Spacer()
-                        TextField("0.00", text: $amountText)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                            .monospacedDigit()
-                            .frame(maxWidth: 130)
-                        Text("€").foregroundStyle(.secondary)
-                    }
-                    DatePicker("Paid on", selection: $paidOn, displayedComponents: .date)
-                } header: {
-                    SectionHeader("\(job.displayName) · \(Fmt.monthTitle(monthStart))")
+            ScrollView {
+                VStack(spacing: 16) {
+                    verdict
+                    amountCard
+                    noteCard
+                    if existing != nil { removeButton }
                 }
-
-                Section {
-                    StatRow(label: "App expected", value: Fmt.money(expected))
-                    StatRow(label: "You received", value: Fmt.money(amount))
-                    StatRow(
-                        label: difference < 0 ? "Short by" : "Extra",
-                        value: Fmt.money(abs(difference)),
-                        emphasized: true,
-                        tint: differenceTint
-                    )
-                } footer: {
-                    Text(differenceExplanation)
-                }
-
-                Section {
-                    TextField("Optional — payslip number, agency, anything", text: $note, axis: .vertical)
-                        .lineLimit(1...3)
-                } header: {
-                    SectionHeader("Note")
-                }
-
-                if existing != nil {
-                    Section {
-                        Button(role: .destructive) {
-                            confirmingDelete = true
-                        } label: {
-                            Label("Remove payment", systemImage: "trash")
-                                .frame(maxWidth: .infinity)
-                        }
-                    }
-                }
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 32)
             }
+            .background(Color(.systemGroupedBackground))
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle(existing == nil ? "Mark as paid" : "Edit payment")
             .navigationBarTitleDisplayMode(.inline)
@@ -108,21 +72,144 @@ struct MarkPaidSheet: View {
         .tint(job.tint)
     }
 
+    // MARK: - Cards
+
+    /// The whole point of the screen: what the shifts came to, what actually
+    /// arrived, and the gap. The gap is the headline because it's the only
+    /// figure you can't work out yourself.
+    private var verdict: some View {
+        HStack(spacing: 0) {
+            LinearGradient(colors: [differenceTint, differenceTint.opacity(0.65)],
+                           startPoint: .top, endPoint: .bottom)
+                .frame(width: 6)
+
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Eyebrow("\(job.displayName) · \(Fmt.monthTitle(monthStart))", opacity: 1)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Image(systemName: isMatch ? "checkmark.seal.fill" : (difference < 0 ? "exclamationmark.triangle.fill" : "plus.circle.fill"))
+                        .font(.footnote)
+                        .foregroundStyle(differenceTint)
+                }
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(isMatch ? Fmt.money(amount) : (difference < 0 ? "−" : "+") + Fmt.money(abs(difference)))
+                        .font(.system(size: 34, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundStyle(differenceTint)
+                        .contentTransition(.numericText())
+                        .minimumScaleFactor(0.6)
+                        .lineLimit(1)
+                    Text(headline)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                HStack(spacing: 0) {
+                    figure("The shifts came to", Fmt.money(expected))
+                    figure("You received", Fmt.money(amount))
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+        .animation(.snappy, value: difference)
+    }
+
+    private func figure(_ label: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value)
+                .font(.subheadline.weight(.semibold))
+                .monospacedDigit()
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var amountCard: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Label("Amount received", systemImage: "arrow.down.circle")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                TextField("0", text: $amountText)
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.trailing)
+                    .monospacedDigit()
+                    .font(.title3.weight(.semibold))
+                    .frame(maxWidth: 130)
+                Text("€")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+
+            Divider().padding(.leading, 16)
+
+            HStack {
+                Label("Paid on", systemImage: "calendar")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                DatePicker("", selection: $paidOn, displayedComponents: .date)
+                    .labelsHidden()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+        }
+        .background(Color(.secondarySystemGroupedBackground),
+                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+    }
+
+    private var noteCard: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Eyebrow("Note", opacity: 1).foregroundStyle(.secondary)
+            TextField("Payslip number, agency, anything", text: $note, axis: .vertical)
+                .lineLimit(1...4)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(Color(.secondarySystemGroupedBackground),
+                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+    }
+
+    private var removeButton: some View {
+        Button(role: .destructive) {
+            confirmingDelete = true
+        } label: {
+            Label("Remove payment", systemImage: "trash")
+                .font(.subheadline.weight(.medium))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+        }
+        .background(Color(.secondarySystemGroupedBackground),
+                    in: RoundedRectangle(cornerRadius: Palette.cardRadius, style: .continuous))
+    }
+
+    /// One line under the big figure, saying what it means.
+    private var headline: String {
+        if isMatch { return "Matches what the logged shifts come to." }
+        if difference < 0 {
+            return "Less than the logged shifts come to. Worth checking — unless tax or an agency fee comes off first, in which case expect this gap every month."
+        }
+        return "More than the logged shifts come to. A missing shift, or a bonus."
+    }
+
     /// A cent or two either way is rounding, not a problem.
     private var isMatch: Bool { abs(difference) < 0.01 }
 
     private var differenceTint: Color {
         isMatch ? Palette.money : (difference < 0 ? Palette.attention : Palette.money)
-    }
-
-    private var differenceExplanation: String {
-        if isMatch {
-            return "Matches what the logged shifts add up to."
-        }
-        if difference < 0 {
-            return "You were paid less than the logged shifts come to. Worth checking — unless tax or an agency fee comes off first, in which case this gap is expected every month."
-        }
-        return "You were paid more than the logged shifts come to. A missing shift, or a bonus."
     }
 
     private func save() {
